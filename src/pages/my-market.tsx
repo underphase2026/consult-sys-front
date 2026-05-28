@@ -23,7 +23,7 @@ const MOCK_STORES = [
 
 export default function MyMarket() {
   const navigate = useNavigate();
-  const hasStores = false;
+  const hasStores = true;
 
   return (
     <div className="app-page">
@@ -62,7 +62,10 @@ export default function MyMarket() {
                         <span className="text-sm font-normal text-text-muted">{store.detail}</span>
                       </div>
                     </div>
-                    <button className="h-btn px-5 min-w-[140px] text-base font-semibold text-white bg-primary border-none rounded-lg cursor-pointer whitespace-nowrap hover:bg-primary-hover">
+                    <button
+                      className="h-btn px-5 min-w-[140px] text-base font-semibold text-white bg-primary border-none rounded-lg cursor-pointer whitespace-nowrap hover:bg-primary-hover"
+                      onClick={() => navigate('/consulting')}
+                    >
                       상담 시스템 이동
                     </button>
                   </div>

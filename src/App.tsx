@@ -10,6 +10,9 @@ import MyPage from './pages/my-page';
 import MyMarket from './pages/my-market';
 import RegisterMarket from './pages/register-market';
 import RegisterStaff from './pages/register-staff';
+import PaymentPage from './pages/payment-page';
+import ConsultingLayout from './components/ConsultingLayout';
+import { ConsultingTabsProvider } from './contexts/ConsultingTabsContext';
 
 function App() {
   return (
@@ -27,6 +30,17 @@ function App() {
         <Route path="/my-market" element={<MyMarket />} />
         <Route path="/register-market" element={<RegisterMarket />} />
         <Route path="/register-staff" element={<RegisterStaff />} />
+        <Route path="/payment" element={<PaymentPage />} />
+
+        {/* 컨설팅 전체를 단일 라우트로 — URL 변경 없이 탭별 독립 step 상태로 관리 */}
+        <Route
+          path="/consulting/*"
+          element={
+            <ConsultingTabsProvider>
+              <ConsultingLayout />
+            </ConsultingTabsProvider>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

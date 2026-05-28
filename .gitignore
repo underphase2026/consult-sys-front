@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Figma API temp files
+figma_*.json
+figma_all.json
+figma_data.json
+figma_ds.json
+UsersuserAppDataLocalTemp*.json

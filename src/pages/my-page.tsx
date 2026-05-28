@@ -188,8 +188,8 @@ function InfoTab() {
 }
 
 const MOCK_SUBSCRIPTIONS = [
-  { store: '요정폰 가야점', plan: 'Pro',   card: '현대카드(904*)', nextPayment: '2027.05.02 (300,000원)' },
-  { store: '요정폰 가야점', plan: 'Ultra', card: '현대카드(904*)', nextPayment: '2027.05.02 (300,000원)' },
+  { store: '요정폰 가야점', plan: 'Basic',   card: '현대카드(904*)', nextPayment: '2027.05.02 (300,000원)' },
+  { store: '요정폰 가야점', plan: 'Pro', card: '현대카드(904*)', nextPayment: '2027.05.02 (300,000원)' },
 ];
 
 const MOCK_PAYMENTS: PaymentDetail[] = [
@@ -227,7 +227,7 @@ function PaymentTab() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-[15px] font-semibold text-text-dark">{sub.store}</span>
-                  <span className={`text-xs font-normal text-white rounded px-1.5 py-0.5 ${sub.plan === 'Ultra' ? 'bg-primary' : 'bg-[#023e8a]'}`}>{sub.plan}</span>
+                  <span className={`text-xs font-normal text-white rounded px-1.5 py-0.5 ${sub.plan === 'Pro' ? 'bg-primary' : 'bg-[#023e8a]'}`}>{sub.plan}</span>
                 </div>
                 <span className="text-[13px] text-text-gray cursor-pointer hover:text-text-dark">결제 관리 &gt;</span>
               </div>

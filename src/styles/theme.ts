@@ -1,10 +1,10 @@
 export const colors = {
   primary: '#1a80ff',
   primaryHover: '#5aaaff',
-  ctaDark: '#023e8a',
+  ctaDark: '#1a80ff',
   link: '#5aaaff',
   textDark: '#111827',
-  textGray: '#6b7280',
+  textGray: '#1a80ff',
   textBlack: '#000000',
   textMuted: '#9ca3af',
   white: '#ffffff',
@@ -52,5 +52,5 @@ export const layout = {
 };
 
 export const shadows = {
-  inputFocus: '0 0 0 3px rgba(90,170,255,0.15)',
+  inputFocus: '0 0 0 3px rgba(90, 170, 255, 0.15)',
 };

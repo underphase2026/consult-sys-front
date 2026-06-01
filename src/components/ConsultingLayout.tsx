@@ -18,11 +18,11 @@ export default function ConsultingLayout({ orderId = '#20260520-7135' }: Props) 
         {/* 헤더 */}
         <header className="h-14 flex items-center justify-between py-2 px-5 bg-white border-b border-input-border shrink-0">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold text-text-dark">고객상담</h1>
-            <span className="text-sm text-muted bg-[#F0F1F3] rounded-xl px-2 py-1">{orderId}</span>
+            <h1 className="text-lg font-semibold text-text-dark leading-6">고객상담</h1>
+            <span className="flex items-center gap-[10px] text-sm font-normal leading-[16px] text-[#9CA3AF] bg-[#F0F1F3] rounded-xl px-2 py-1">{orderId}</span>
           </div>
           <button
-            className="w-[200px] h-10 bg-primary text-white text-base font-semibold rounded-lg border-none cursor-pointer hover:bg-primary-hover"
+            className="w-[200px] h0-1 bg-primary text-white text-base font-semibold rounded-lg border-none cursor-pointer"
             onClick={addTab}
           >
             + 상담추가
@@ -37,10 +37,10 @@ export default function ConsultingLayout({ orderId = '#20260520-7135' }: Props) 
               <div
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex justify-center items-center gap-2 h-full py-2 px-0.5 cursor-pointer select-none transition-colors border-b-2
+                className={`flex justify-center items-center gap-2 h-full py-2 px-0.5 cursor-pointer select-none border-b-2
                   ${isActive
                     ? 'border-b-primary bg-white text-[#111827]'
-                    : 'border-b-transparent text-[#9CA3AF] hover:text-[#6B7280]'
+                    : 'border-b-transparent text-[#9CA3AF]'
                   }`}
               >
                 <span className={`px-1 py-0.5 rounded text-xs font-normal leading-none
@@ -51,7 +51,7 @@ export default function ConsultingLayout({ orderId = '#20260520-7135' }: Props) 
                   {tab.label}
                 </span>
                 <button
-                  className="w-5 h-5 flex items-center justify-center rounded-full bg-transparent border-none cursor-pointer text-[#9CA3AF] hover:text-[#111827] hover:bg-[#E2E4EC]"
+                  className="w-5 h-5 flex items-center justify-center rounded-full bg-transparent border-none cursor-pointer text-[#9CA3AF]"
                   onClick={(e) => { e.stopPropagation(); removeTab(tab.id); }}
                 >
                   <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
@@ -63,7 +63,7 @@ export default function ConsultingLayout({ orderId = '#20260520-7135' }: Props) 
           })}
 
           <button
-            className="w-10 h-11 flex items-center justify-center text-[#C4C4D0] hover:text-[#111827] bg-transparent border-none cursor-pointer"
+            className="w-10 h-11 flex items-center justify-center text-[#C4C4D0] bg-transparent border-none cursor-pointer"
             onClick={addTab}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">

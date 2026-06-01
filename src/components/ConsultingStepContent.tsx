@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useConsultingTabs, ConsultingStep } from '../contexts/ConsultingTabsContext';
 import SKT from '../images/SKT.svg';
 import KT from '../images/KT.svg';
@@ -54,7 +54,6 @@ const DEVICES: Device[] = [
       { name: '소프트핑크', hex: '#F2B8C6' },
       { name: '화이트',     hex: '#F5F5F0' },
       { name: '블랙',       hex: '#1C1C1E' },
-      { name: '민트',       hex: '#B2D8D8' },
     ],
     specs: {
       cpu: 'A19칩', ram: '8GB', storage: '256GB', display: '6.1인치',
@@ -75,6 +74,8 @@ const SPEC_LABELS = [
   { key: 'released', label: '출시일'     },
 ];
 
+const DEVICE_TYPE_OPTIONS = ['5G', 'LTE', '3G', '기타'];
+
 export default function ConsultingStepContent() {
   const { activeTab, navigateStep } = useConsultingTabs();
   const { step } = activeTab;
@@ -94,7 +95,7 @@ function TypeSelectStep({ navigate }: { navigate: (s: ConsultingStep) => void })
       <h2 className="text-2xl font-semibold text-text-dark">상담 유형을 선택해 주세요</h2>
       <div className="flex gap-6">
         <button
-          className="w-[360px] h-[280px] bg-white rounded-xl border border-input-border flex flex-col items-center pt-9 pb-5 cursor-pointer hover:border-primary transition-colors"
+          className="w-[360px] h-[280px] bg-white rounded-xl border border-input-border flex flex-col items-center pt-9 pb-5 cursor-pointer"
           onClick={() => navigate({ name: 'wireless-carrier' })}
         >
           <img src={WirelessIcon} alt="무선상담" className="w-[120px] h-[120px]" />
@@ -102,7 +103,7 @@ function TypeSelectStep({ navigate }: { navigate: (s: ConsultingStep) => void })
           <div className="flex gap-1.5 mt-2"><Tag label="# 휴대폰 개통" /></div>
         </button>
         <button
-          className="w-[360px] h-[280px] bg-white rounded-xl border border-input-border flex flex-col items-center pt-9 pb-5 cursor-pointer hover:border-primary transition-colors"
+          className="w-[360px] h-[280px] bg-white rounded-xl border border-input-border flex flex-col items-center pt-9 pb-5 cursor-pointer"
           onClick={() => navigate({ name: 'wired-carrier' })}
         >
           <img src={WiredIcon} alt="유선상담" className="w-[120px] h-[120px]" />
@@ -124,7 +125,7 @@ function WirelessCarrierStep({ navigate }: { navigate: (s: ConsultingStep) => vo
         {CARRIERS.map(carrier => (
           <button
             key={carrier.key}
-            className="w-[280px] h-[280px] bg-white rounded-xl border border-input-border flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-primary transition-colors"
+            className="w-[280px] h-[280px] bg-white rounded-xl border border-input-border flex flex-col items-center justify-center gap-3 cursor-pointer"
             onClick={() => navigate({ name: 'wireless-device', carrier: carrier.key })}
           >
             <img src={carrier.logo} alt={carrier.label} className="w-[140px] h-[140px] object-contain" />
@@ -138,18 +139,26 @@ function WirelessCarrierStep({ navigate }: { navigate: (s: ConsultingStep) => vo
 
 function WirelessDeviceStep(_: { carrier: string; navigate: (s: ConsultingStep) => void }) {
   const [brandFilter, setBrandFilter] = useState<BrandFilter>('all');
-  const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState(DEVICES[0].id);
+  const [deviceTypeOpen, setDeviceTypeOpen] = useState(false);
+  const [selectedDeviceType, setSelectedDeviceType] = useState('단말기 유형');
+  const deviceTypeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (deviceTypeRef.current && !deviceTypeRef.current.contains(e.target as Node)) {
+        setDeviceTypeOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const filtered = DEVICES.filter(d => {
-    const matchBrand =
-      brandFilter === 'all'     ? true :
-      brandFilter === 'samsung' ? d.brand === 'Samsung' :
-      brandFilter === 'apple'   ? d.brand === 'Apple' :
-      (d.brand !== 'Samsung' && d.brand !== 'Apple');
-    const q = search.toLowerCase();
-    const matchSearch = !q || d.name.toLowerCase().includes(q) || d.model.toLowerCase().includes(q);
-    return matchBrand && matchSearch;
+    if (brandFilter === 'samsung') return d.brand === 'Samsung';
+    if (brandFilter === 'apple')   return d.brand === 'Apple';
+    if (brandFilter === 'other')   return d.brand !== 'Samsung' && d.brand !== 'Apple';
+    return true;
   });
 
   const selected = DEVICES.find(d => d.id === selectedId) ?? DEVICES[0];
@@ -158,42 +167,72 @@ function WirelessDeviceStep(_: { carrier: string; navigate: (s: ConsultingStep) 
     <div className="pt-[60px] pb-[60px] flex flex-col items-center">
       <div className="w-[1080px] flex flex-col gap-6">
 
-        {/* 필터 바 */}
-        <div className="flex items-center gap-6 h-11">
-          <div className="flex p-1 rounded-lg bg-white border border-input-border shrink-0">
+        {/* Frame 698: 필터 바 */}
+        <div className="flex items-center justify-between h-11">
+
+          {/* Frame 704: 브랜드 필터 */}
+          <div className="flex items-center p-1 rounded-lg bg-white border border-input-border shrink-0">
             {BRAND_FILTERS.map(b => (
               <button
                 key={b.key}
                 onClick={() => setBrandFilter(b.key)}
-                className={`w-16 h-9 rounded-lg text-sm font-medium border-none cursor-pointer transition-colors
+                className={`w-16 h-9 rounded-lg text-sm font-medium border-none cursor-pointer
                   ${brandFilter === b.key
-                    ? 'bg-primary text-white'
-                    : 'bg-transparent text-text-dark hover:bg-[#F0F1F3]'
+                    ? 'bg-primary text-[#FFFFFF]'
+                    : 'bg-transparent text-[#6B7280]'
                   }`}
               >
                 {b.label}
               </button>
             ))}
           </div>
-          <div className="flex gap-6 flex-1 min-w-0">
-            <button className="w-[280px] h-11 shrink-0 flex items-center justify-between px-3 rounded-lg bg-white border border-input-border text-sm text-text-dark cursor-pointer hover:bg-[#F8F9FA]">
-              <span>단말기 유형</span>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+
+          {/* Frame 705: 중간 그룹 */}
+          <div className="flex gap-6 shrink-0">
+
+            {/* Frame 692/703: 단말기 유형 드롭다운 */}
+            <div ref={deviceTypeRef} className="relative shrink-0">
+              <button
+                className="w-[120px] h-11 flex items-center justify-between py-3 pl-3 pr-2 rounded-lg bg-white border border-input-border text-sm cursor-pointer shrink-0"
+                style={{ color: selectedDeviceType === '단말기 유형' ? '#9CA3AF' : '#111827' }}
+                onClick={() => setDeviceTypeOpen(o => !o)}
+              >
+                <span>{selectedDeviceType}</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0">
+                  <path d="M4 6l4 4 4-4" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              {deviceTypeOpen && (
+                <div className="absolute top-full left-0 mt-1 w-[120px] bg-white border border-input-border rounded-lg shadow-md z-50 overflow-hidden">
+                  {DEVICE_TYPE_OPTIONS.map(opt => (
+                    <button
+                      key={opt}
+                      className={`w-full px-3 py-2 text-left text-sm cursor-pointer border-none text-[#6B7280]
+                        ${selectedDeviceType === opt ? 'bg-[#E8F2FF]' : 'bg-white'}`}
+                      onClick={() => { setSelectedDeviceType(opt); setDeviceTypeOpen(false); }}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Frame 645: 단말기 검색 */}
+            <button className="w-[280px] h-11 flex items-center justify-between py-3 pl-3 pr-2 rounded-lg bg-white border border-input-border text-sm text-[#9CA3AF] cursor-pointer">
+              <span>단말기 검색</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0">
                 <path d="M4 6l4 4 4-4" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            <div className="flex-1 h-11 flex items-center gap-2 px-3 rounded-lg bg-[#F8F9FA] border border-input-border">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0">
-                <circle cx="7" cy="7" r="5" stroke="#9CA3AF" strokeWidth="1.5"/>
-                <path d="M11 11l3 3" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round"/>
+
+            {/* Frame 694: 5GX 프리미엄 */}
+            <button className="w-[344px] h-11 flex items-center justify-between py-3 pl-3 pr-2 rounded-lg bg-[#F8F9FA] border border-input-border text-sm text-[#9CA3AF] cursor-pointer">
+              <span>5GX 프리미엄(유튜브 프리미엄)</span>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0">
+                <path d="M9.5 2.5L11.5 4.5L5 11H3v-2L9.5 2.5Z" stroke="#9CA3AF" strokeWidth="1.3" strokeLinejoin="round"/>
               </svg>
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="단말기 검색"
-                className="flex-1 bg-transparent text-sm text-text-dark outline-none placeholder:text-muted"
-              />
-            </div>
+            </button>
           </div>
         </div>
 
@@ -209,6 +248,7 @@ function WirelessDeviceStep(_: { carrier: string; navigate: (s: ConsultingStep) 
               <span className="w-[92px] shrink-0 text-right">출고가</span>
               <span className="w-[88px] shrink-0 text-right">공통지원금</span>
               <span className="w-[88px] shrink-0 text-right">할부원금</span>
+              <span className="w-6 h-6 flex flex-col justify-center items-center shrink-0" />
             </div>
 
             {/* 바디 */}
@@ -217,31 +257,31 @@ function WirelessDeviceStep(_: { carrier: string; navigate: (s: ConsultingStep) 
                 <div
                   key={device.id}
                   onClick={() => setSelectedId(device.id)}
-                  className={`flex justify-between items-center h-16 py-4 px-5 shrink-0 cursor-pointer border-b border-input-border transition-colors text-base
-                    ${selectedId === device.id ? 'bg-[#E8F2FF]' : 'bg-white hover:bg-[#F8F9FA]'}`}
+                  className={`flex justify-between items-center h-16 py-4 px-5 shrink-0 self-stretch cursor-pointer border-b border-input-border text-base
+                    ${selectedId === device.id ? 'bg-[#E8F2FF]' : 'bg-white'}`}
                 >
                   <span className="w-[156px] shrink-0 font-medium text-text-dark truncate">{device.name}</span>
                   <span className="w-[124px] shrink-0 font-medium text-text-gray truncate">{device.model}</span>
                   <span className="w-[92px] shrink-0 font-medium text-text-gray text-right">{device.price}</span>
                   <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">{device.support}</span>
                   <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">{device.remaining}</span>
-                  <span className="w-6 h-6 flex items-center justify-center shrink-0">
-                    <img src={UnionImg} alt="" className="w-6 h-6" />
+                  <span className="w-6 h-6 flex flex-col justify-center items-center shrink-0">
+                    <img src={UnionImg} alt="" className="w-[17px] h-[16px] shrink-0" />
                   </span>
                 </div>
               ))}
               {Array.from({ length: 14 }).map((_, i) => (
                 <div
                   key={`ph-${i}`}
-                  className="flex justify-between items-center h-16 py-4 px-5 shrink-0 border-b border-input-border last:border-b-0 text-base"
+                  className="flex justify-between items-center h-16 py-4 px-5 shrink-0 self-stretch bg-white border-b border-input-border last:border-b-0 text-base"
                 >
                   <span className="w-[156px] shrink-0 font-medium text-text-dark">기기명</span>
                   <span className="w-[124px] shrink-0 font-medium text-text-gray">모델명</span>
                   <span className="w-[92px] shrink-0 font-medium text-text-gray text-right">1,254,000원</span>
                   <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">700,000원</span>
                   <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">554,000원</span>
-                  <span className="w-6 h-6 flex items-center justify-center shrink-0">
-                    <img src={UnionImg} alt="" className="w-6 h-6" />
+                  <span className="w-6 h-6 flex flex-col justify-center items-center shrink-0">
+                    <img src={UnionImg} alt="" className="w-[17px] h-[16px] shrink-0" />
                   </span>
                 </div>
               ))}
@@ -259,14 +299,25 @@ function WirelessDeviceStep(_: { carrier: string; navigate: (s: ConsultingStep) 
 
 function DetailPanel({ device }: { device: Device }) {
   const [colorIdx, setColorIdx] = useState(0);
+  const [colorOpen, setColorOpen] = useState(false);
+  const colorRef = useRef<HTMLDivElement>(null);
   const color = device.colors[colorIdx];
   const deviceImage = DEVICE_IMAGES[device.id];
-  const nextColor = () => setColorIdx(i => (i + 1) % device.colors.length);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (colorRef.current && !colorRef.current.contains(e.target as Node)) {
+        setColorOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
-    <div className="w-[344px] h-[660px] shrink-0 rounded-xl border border-input-border bg-white flex flex-col justify-between items-center py-6 px-5 overflow-y-auto">
+    <div className="w-[344px] h-[660px] shrink-0 rounded-xl border-2 border-input-border bg-white flex flex-col justify-between items-center py-6 px-5">
 
-      {/* 이미지 + 기기명 */}
+      {/* Frame 649: 이미지 + 기기명 */}
       <div className="w-full flex flex-col items-center gap-4">
         {deviceImage ? (
           <img src={deviceImage} alt={device.name} className="w-[220px] h-[220px] rounded-xl object-contain" />
@@ -275,35 +326,54 @@ function DetailPanel({ device }: { device: Device }) {
             <PhoneOutlineIcon fill={color.hex} />
           </div>
         )}
-        <span className="text-lg font-semibold text-text-dark">{device.name}</span>
+        <span className="text-lg font-semibold text-text-dark text-center">{device.name}</span>
       </div>
 
-      {/* 컬러 선택 */}
-      <button
-        onClick={nextColor}
-        className="w-full h-12 flex items-center justify-between pl-3 pr-2 rounded-lg bg-white border border-input-border cursor-pointer hover:bg-[#F8F9FA]"
-      >
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full shrink-0" style={{ backgroundColor: color.hex }} />
-          <div className="w-px h-5 bg-input-border shrink-0" />
-          <span className="text-sm font-medium text-text-dark">{color.name}</span>
-        </div>
-        <svg width="8" height="4" viewBox="0 0 8 4" fill="none" className="shrink-0">
-          <path d="M1 1l3 2 3-2" stroke="#6B7280" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </button>
+      {/* Frame 693: 컬러 선택 드롭다운 */}
+      <div ref={colorRef} className="relative w-full">
+        <button
+          onClick={() => setColorOpen(o => !o)}
+          className="w-full h-12 flex items-center justify-between py-2 pl-3 pr-2 shrink-0 rounded-lg bg-white border border-input-border cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full shrink-0" style={{ backgroundColor: color.hex }} />
+            <div className="w-px h-5 bg-input-border shrink-0" />
+            <span className="text-sm font-medium text-[#111827]">{color.name}</span>
+          </div>
+          <svg width="8" height="4" viewBox="0 0 8 4" fill="none" className="shrink-0">
+            <path d="M1 1l3 2 3-2" stroke="#6B7280" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+        {colorOpen && (
+          <div className="absolute top-full left-0 mt-1 w-full bg-white border border-input-border rounded-lg shadow-md z-50 overflow-hidden">
+            {device.colors.map((c, i) => (
+              <button
+                key={c.name}
+                className={`w-full flex items-center gap-2 px-3 py-2.5 text-left cursor-pointer border-none
+                  ${i === colorIdx ? 'bg-[#E8F2FF]' : 'bg-white'}`}
+                onClick={() => { setColorIdx(i); setColorOpen(false); }}
+              >
+                <div className="w-5 h-5 rounded-full shrink-0" style={{ backgroundColor: c.hex }} />
+                <div className="w-px h-5 bg-input-border shrink-0" />
+                <span className="text-sm font-medium text-[#111827]">{c.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* 스펙 + 상담진행 */}
+      {/* Frame 684: 스펙 + 상담진행 */}
       <div className="w-full flex flex-col gap-5">
-        <div className="rounded-lg bg-[#F7F8FA] p-3 flex flex-col gap-[6px]">
+        {/* Frame 652: 스펙 테이블 */}
+        <div className="w-full flex flex-col items-center py-3 px-2 gap-1 border-t border-b border-[#E2E8F0] bg-[#F8F9FA]">
           {SPEC_LABELS.map(({ key, label }) => (
-            <div key={key} className="flex items-start gap-2">
-              <span className="w-[64px] shrink-0 text-[13px] font-normal text-[#718096]">{label}</span>
-              <span className="flex-1 text-[13px] font-normal text-[#2D3748] leading-normal break-words whitespace-pre-line">{device.specs[key]}</span>
+            <div key={key} className="w-full flex items-start gap-2">
+              <span className="w-[64px] shrink-0 text-[13px] font-normal text-[#111827] leading-[16px]">{label}</span>
+              <span className="flex-1 text-[13px] font-normal text-[#6B7280] leading-[16px] break-words whitespace-pre-line">{device.specs[key]}</span>
             </div>
           ))}
         </div>
-        <button className="w-full h-[52px] bg-primary text-white text-base font-medium rounded-lg border-none cursor-pointer hover:bg-primary-hover">
+        <button className="w-full h-[52px] flex items-center justify-center px-3 bg-primary text-white text-base font-medium rounded-lg border-none cursor-pointer">
           상담 진행
         </button>
       </div>
@@ -320,7 +390,7 @@ function WiredCarrierStep() {
         {CARRIERS.map(carrier => (
           <button
             key={carrier.key}
-            className="w-[280px] h-[280px] bg-white rounded-xl border border-input-border flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-primary transition-colors"
+            className="w-[280px] h-[280px] bg-white rounded-xl border border-input-border flex flex-col items-center justify-center gap-3 cursor-pointer"
             onClick={() => {}}
           >
             <img src={carrier.logo} alt={carrier.label} className="w-[140px] h-[140px] object-contain" />

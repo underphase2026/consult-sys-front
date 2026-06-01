@@ -27,10 +27,18 @@ function PhoneChangeModalContent({ onClose }: Props) {
     onClose();
   };
 
+  const isValidPhone = (p: string) => /^01[0-9]{9}$/.test(p.replace(/[^0-9]/g, ''));
+
   const handlePhoneInput = (v: string) => {
     setPhone(v);
     setError(false);
     setVerified(false);
+  };
+
+  const handleSendCode = () => {
+    if (!isValidPhone(phone)) { setError(true); return; }
+    setError(false);
+    setShowVerify(true);
   };
 
   return (
@@ -58,7 +66,7 @@ function PhoneChangeModalContent({ onClose }: Props) {
               <button
                 type="button"
                 className="action-btn"
-                onClick={() => { setError(false); setShowVerify(true); }}
+                onClick={handleSendCode}
               >
                 {verified ? '인증 완료' : '인증'}
               </button>
@@ -90,6 +98,7 @@ function PhoneChangeModalContent({ onClose }: Props) {
       {showVerify && (
         <PhoneVerifyModal
           phone={phone}
+          startStep="code"
           onVerified={() => { setVerified(true); setShowVerify(false); }}
           onClose={() => setShowVerify(false)}
         />

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import PaymentInfo from '../pages/payment-info';
 import { useConsultingTabs, ConsultingStep } from '../contexts/ConsultingTabsContext';
 import SKT from '../images/SKT.svg';
 import KT from '../images/KT.svg';
@@ -83,8 +84,9 @@ export default function ConsultingStepContent() {
   switch (step.name) {
     case 'type-select':      return <TypeSelectStep navigate={navigateStep} />;
     case 'wireless-carrier': return <WirelessCarrierStep navigate={navigateStep} />;
-    case 'wireless-device':  return <WirelessDeviceStep carrier={step.carrier} navigate={navigateStep} />;
-    case 'wired-carrier':    return <WiredCarrierStep />;
+    case 'wireless-device':      return <WirelessDeviceStep carrier={step.carrier} navigate={navigateStep} />;
+    case 'wireless-consulting':  return <PaymentInfo carrier={step.carrier} deviceId={step.deviceId} navigate={navigateStep} />;
+    case 'wired-carrier':        return <WiredCarrierStep />;
     default:                 return null;
   }
 }
@@ -137,7 +139,7 @@ function WirelessCarrierStep({ navigate }: { navigate: (s: ConsultingStep) => vo
   );
 }
 
-function WirelessDeviceStep(_: { carrier: string; navigate: (s: ConsultingStep) => void }) {
+function WirelessDeviceStep({ carrier, navigate }: { carrier: string; navigate: (s: ConsultingStep, label?: string) => void }) {
   const [brandFilter, setBrandFilter] = useState<BrandFilter>('all');
   const [selectedId, setSelectedId] = useState(DEVICES[0].id);
   const [deviceTypeOpen, setDeviceTypeOpen] = useState(false);
@@ -289,7 +291,7 @@ function WirelessDeviceStep(_: { carrier: string; navigate: (s: ConsultingStep) 
           </div>
 
           {/* 상세 패널 */}
-          <DetailPanel device={selected} key={selected.id} />
+          <DetailPanel device={selected} carrier={carrier} navigate={navigate} key={selected.id} />
 
         </div>
       </div>
@@ -297,7 +299,13 @@ function WirelessDeviceStep(_: { carrier: string; navigate: (s: ConsultingStep) 
   );
 }
 
-function DetailPanel({ device }: { device: Device }) {
+const CARRIER_LABELS: Record<string, string> = { skt: 'SKT', kt: 'KT', lgu: 'LG U+' };
+
+function DetailPanel({ device, carrier, navigate }: {
+  device: Device;
+  carrier: string;
+  navigate: (s: ConsultingStep, label?: string) => void;
+}) {
   const [colorIdx, setColorIdx] = useState(0);
   const [colorOpen, setColorOpen] = useState(false);
   const colorRef = useRef<HTMLDivElement>(null);
@@ -373,7 +381,13 @@ function DetailPanel({ device }: { device: Device }) {
             </div>
           ))}
         </div>
-        <button className="w-full h-[52px] flex items-center justify-center px-3 bg-primary text-white text-base font-medium rounded-lg border-none cursor-pointer">
+        <button
+          className="w-full h-[52px] flex items-center justify-center px-3 bg-primary text-white text-base font-medium rounded-lg border-none cursor-pointer"
+          onClick={() => navigate(
+            { name: 'wireless-consulting', carrier, deviceId: device.id },
+            `${CARRIER_LABELS[carrier] ?? carrier.toUpperCase()}_${device.name} ${device.specs.storage}`
+          )}
+        >
           상담 진행
         </button>
       </div>

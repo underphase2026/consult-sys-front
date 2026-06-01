@@ -22,7 +22,7 @@ export default function ConsultingLayout({ orderId = '#20260520-7135' }: Props) 
             <span className="flex items-center gap-[10px] text-sm font-normal leading-[16px] text-[#9CA3AF] bg-[#F0F1F3] rounded-xl px-2 py-1">{orderId}</span>
           </div>
           <button
-            className="flex w-[200px] h-[40px] px-3 justify-center items-center bg-[#1A80FF] text-white text-base font-semibold rounded-lg border-none cursor-pointer"
+            className="flex w-[200px] h-[40px] px-3 justify-center items-center bg-[#1A80FF] hover:bg-[#5AAAFF] text-white text-base font-semibold rounded-lg border-none cursor-pointer transition-colors"
             onClick={addTab}
           >
             + 상담추가
@@ -33,6 +33,9 @@ export default function ConsultingLayout({ orderId = '#20260520-7135' }: Props) 
         <div className="flex items-center h-11 bg-white border-b border-input-border shrink-0 px-2">
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
+            const badgeLabel = tab.step.name.startsWith('wireless') ? '무선'
+              : tab.step.name.startsWith('wired') ? '유선'
+              : '미정';
             return (
               <div
                 key={tab.id}
@@ -43,9 +46,12 @@ export default function ConsultingLayout({ orderId = '#20260520-7135' }: Props) 
                     : 'border-b-transparent text-[#9CA3AF]'
                   }`}
               >
-                <span className={`px-1 py-0.5 rounded text-xs font-normal leading-none
-                  ${isActive ? 'bg-[#F0F1F3] text-[#6B7280]' : 'bg-[#F0F1F3] text-[#9CA3AF]'}`}>
-                  미정
+                <span className={`flex flex-col justify-center items-center rounded text-xs font-normal
+                  ${badgeLabel !== '미정'
+                    ? 'px-1 py-[2px] bg-[#E8F2FF] text-[#5AAAFF] leading-4'
+                    : isActive ? 'px-1 py-0.5 bg-[#F0F1F3] text-[#6B7280] leading-none' : 'px-1 py-0.5 bg-[#F0F1F3] text-[#9CA3AF] leading-none'
+                  }`}>
+                  {badgeLabel}
                 </span>
                 <span className={`text-base ${isActive ? 'font-medium' : 'font-normal'}`}>
                   {tab.label}

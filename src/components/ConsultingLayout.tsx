@@ -22,7 +22,7 @@ export default function ConsultingLayout({ orderId = '#20260520-7135' }: Props) 
             <span className="flex items-center gap-[10px] text-sm font-normal leading-[16px] text-[#9CA3AF] bg-[#F0F1F3] rounded-xl px-2 py-1">{orderId}</span>
           </div>
           <button
-            className="w-[200px] h0-1 bg-primary text-white text-base font-semibold rounded-lg border-none cursor-pointer"
+            className="flex w-[200px] h-[40px] px-3 justify-center items-center bg-[#1A80FF] text-white text-base font-semibold rounded-lg border-none cursor-pointer"
             onClick={addTab}
           >
             + 상담추가

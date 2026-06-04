@@ -181,9 +181,14 @@ function WirelessDeviceStep({ carrier, navigate }: { carrier: string; navigate: 
               { name: '블랙',       hex: '#1C1C1E' },
             ],
             specs: {
-              cpu: 'A19칩', ram: '8GB', storage: '256GB', display: '6.1인치',
-              camera: '전면: 1,200만\n후면: 4,800만', battery: '4005mah',
-              weight: '200g', released: '2026년 3월 11일',
+              cpu: d.specs?.cpu || '-',
+              ram: d.specs?.ram || '-',
+              storage: d.specs?.storage || '-',
+              display: d.specs?.display || '-',
+              camera: d.specs?.camera || '-',
+              battery: d.specs?.battery || '-',
+              weight: d.specs?.weight || '-',
+              released: d.releaseDate ? new Date(d.releaseDate).toLocaleDateString('ko-KR') : '-',
             },
           };
         });

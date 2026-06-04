@@ -84,7 +84,7 @@ export default function MyMarket() {
                     </div>
                     <button
                       className="h-btn px-5 min-w-[140px] text-base font-semibold text-white bg-primary border-none rounded-lg cursor-pointer whitespace-nowrap hover:bg-primary-hover"
-                      onClick={() => navigate('/consulting')}
+                      onClick={() => navigate('/consulting', { state: { newQuote: true } })}
                     >
                       상담 시스템 이동
                     </button>

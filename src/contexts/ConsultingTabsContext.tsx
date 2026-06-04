@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export type ConsultingStep =
@@ -70,6 +70,21 @@ export function ConsultingTabsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     sessionStorage.setItem('consulting-active-tab-id', activeTabId);
   }, [activeTabId]);
+
+  const newQuoteProcessed = useRef(false);
+
+  useEffect(() => {
+    if (location.state?.newQuote && !newQuoteProcessed.current) {
+      newQuoteProcessed.current = true;
+      const newId = String(Date.now());
+      setTabs(prev => {
+        const label = `새 견적_${prev.length + 1}`;
+        return [...prev, { id: newId, label, step: { name: 'type-select' } }];
+      });
+      setActiveTabId(newId);
+      navigate('/consulting', { replace: true, state: {} });
+    }
+  }, [location.state?.newQuote, navigate]);
 
   const activeTab = tabs.find(t => t.id === activeTabId) ?? tabs[0];
 

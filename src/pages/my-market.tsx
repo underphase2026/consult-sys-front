@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import PrivateHeader from '../components/PrivateHeader';
 import Footer from '../components/Footer';
 import marketIcon from '../images/market.svg';
@@ -14,16 +15,33 @@ const planBadge = (plan: string) =>
       : 'text-text-muted bg-input-disabled-bg'
   }`;
 
-const MOCK_STORES = [
-  { id: 1, name: '최저가 휴대폰 가야 동의대점', plan: 'Pro', detail: '대표명(매장전화번호or대표 개인 전화번호)' },
-  { id: 2, name: '최저가 휴대폰 가야 동의대점', plan: 'Basic', detail: '대표명(매장전화번호or대표 개인 전화번호)' },
-  { id: 3, name: '최저가 휴대폰 가야 동의대점', plan: 'Free', detail: '대표명(매장전화번호or대표 개인 전화번호)' },
-];
-
-
 export default function MyMarket() {
   const navigate = useNavigate();
-  const hasStores = true;
+  const [stores, setStores] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        const res = await fetch('/api/stores/mine', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const dataList = Array.isArray(json) ? json : (json.data || []);
+          setStores(dataList);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStores();
+  }, []);
+
+  const hasStores = stores.length > 0;
 
   return (
     <div className="app-page">
@@ -43,12 +61,14 @@ export default function MyMarket() {
             </button>
           </div>
 
-          {hasStores ? (
+          {isLoading ? (
+            <div className="py-20 text-center text-text-gray">매장 목록을 불러오는 중...</div>
+          ) : hasStores ? (
             <div className="flex flex-col gap-3">
-              {MOCK_STORES.map((store) => (
-                <div key={store.id} className="flex flex-col pt-5">
+              {stores.map((store, idx) => (
+                <div key={store.storeId || idx} className="flex flex-col pt-5">
                   <div className="flex items-center h-8">
-                    <span className="text-sm font-normal text-text-dark">{store.id}</span>
+                    <span className="text-sm font-normal text-text-dark">{idx + 1}</span>
                   </div>
                   <hr className="h-px bg-[#e8ecf2] border-none shrink-0" />
                   <div className="flex items-center justify-between py-2">
@@ -56,10 +76,10 @@ export default function MyMarket() {
                       <img src={rectangleImg} alt="매장 이미지" className="w-[200px] h-[112px] rounded-lg shrink-0 object-cover" />
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg font-semibold text-text-dark">{store.name}</span>
-                          <span className={planBadge(store.plan)}>{store.plan}</span>
+                          <span className="text-lg font-semibold text-text-dark">{store.storeName}</span>
+                          <span className={planBadge(store.rate || 'Basic')}>{store.rate || 'Basic'}</span>
                         </div>
-                        <span className="text-sm font-normal text-text-muted">{store.detail}</span>
+                        <span className="text-sm font-normal text-text-muted">{store.ownerName} ({store.phoneNumber})</span>
                       </div>
                     </div>
                     <button

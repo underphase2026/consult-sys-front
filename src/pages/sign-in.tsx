@@ -6,6 +6,16 @@ import PasswordChangeModal from '../components/PasswordChangeModal';
 import yojeongSymbol from '../images/yojeong_simbol.svg';
 import passwordDots from '../images/password.svg';
 
+interface LoginResponseDto {
+  accessToken: string;
+}
+
+interface ErrorResponse {
+  statusCode: number;
+  message: string | string[];
+  error: string;
+}
+
 export default function SignIn() {
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
@@ -13,6 +23,36 @@ export default function SignIn() {
   const [keepLogin, setKeepLogin] = useState(false);
   const [pwFocused, setPwFocused] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: phone, password }),
+      });
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json();
+        const msg = Array.isArray(errorData.message) ? errorData.message[0] : errorData.message;
+        throw new Error(msg || '로그인에 실패했습니다.');
+      }
+
+      const resData: { success: boolean; data: LoginResponseDto } = await response.json();
+      localStorage.setItem('accessToken', resData.data.accessToken);
+      navigate('/my-market');
+    } catch (err: any) {
+      setErrorMsg(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="app-page">
@@ -29,7 +69,7 @@ export default function SignIn() {
 
           <form
             className="w-full flex flex-col"
-            onSubmit={(e) => { e.preventDefault(); navigate('/my-market'); }}
+            onSubmit={handleLogin}
           >
             <div className="field-group">
               <label className="field-label">휴대폰 번호</label>
@@ -83,7 +123,18 @@ export default function SignIn() {
             </div>
 
             <div className="submit-wrap">
-              <button type="submit" className="btn-primary">로그인</button>
+              {errorMsg && (
+                <div className="mb-3 text-red-500 text-sm font-medium text-center">
+                  {errorMsg}
+                </div>
+              )}
+              <button 
+                type="submit" 
+                className="btn-primary disabled:opacity-50"
+                disabled={isLoading}
+              >
+                {isLoading ? '로그인 중...' : '로그인'}
+              </button>
             </div>
           </form>
 

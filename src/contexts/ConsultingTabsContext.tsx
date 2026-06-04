@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export type ConsultingStep =
   | { name: 'type-select' }
@@ -10,6 +11,26 @@ export interface Tab {
   id: string;
   label: string;
   step: ConsultingStep;
+}
+
+function stepToPath(step: ConsultingStep): string {
+  switch (step.name) {
+    case 'type-select': return '/consulting';
+    case 'wireless-carrier': return '/consulting/wireless';
+    case 'wireless-device': return `/consulting/wireless/${step.carrier.toLowerCase()}`;
+    case 'wired-carrier': return '/consulting/wired';
+  }
+}
+
+function pathToStep(pathname: string): ConsultingStep | null {
+  if (pathname === '/consulting') return { name: 'type-select' };
+  if (pathname === '/consulting/wireless') return { name: 'wireless-carrier' };
+  if (pathname.startsWith('/consulting/wireless/')) {
+    const carrier = pathname.split('/')[3]?.toUpperCase();
+    return { name: 'wireless-device', carrier: carrier || 'SKT' };
+  }
+  if (pathname === '/consulting/wired') return { name: 'wired-carrier' };
+  return null;
 }
 
 interface ContextType {
@@ -25,12 +46,50 @@ interface ContextType {
 const ConsultingTabsCtx = createContext<ContextType | null>(null);
 
 export function ConsultingTabsProvider({ children }: { children: ReactNode }) {
-  const [tabs, setTabs] = useState<Tab[]>([
-    { id: '1', label: '새 견적_1', step: { name: 'type-select' } },
-  ]);
-  const [activeTabId, setActiveTabId] = useState('1');
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [tabs, setTabs] = useState<Tab[]>(() => {
+    const saved = sessionStorage.getItem('consulting-tabs');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [{ id: '1', label: '새 견적_1', step: { name: 'type-select' } }];
+  });
+
+  const [activeTabId, setActiveTabId] = useState<string>(() => {
+    return sessionStorage.getItem('consulting-active-tab-id') || '1';
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('consulting-tabs', JSON.stringify(tabs));
+  }, [tabs]);
+
+  useEffect(() => {
+    sessionStorage.setItem('consulting-active-tab-id', activeTabId);
+  }, [activeTabId]);
 
   const activeTab = tabs.find(t => t.id === activeTabId) ?? tabs[0];
+
+  // Sync URL to activeTab when navigating steps
+  const navigateStep = useCallback((step: ConsultingStep) => {
+    setTabs(prev =>
+      prev.map(t => (t.id === activeTabId ? { ...t, step } : t))
+    );
+    navigate(stepToPath(step));
+  }, [activeTabId, navigate]);
+
+  // Sync activeTab to URL on browser Back/Forward or initial load
+  useEffect(() => {
+    const stepFromUrl = pathToStep(location.pathname);
+    if (stepFromUrl) {
+      if (JSON.stringify(activeTab.step) !== JSON.stringify(stepFromUrl)) {
+        setTabs(prev => prev.map(t => (t.id === activeTabId ? { ...t, step: stepFromUrl } : t)));
+      }
+    }
+  }, [location.pathname]); // ignore activeTab.step dependency to avoid loops
 
   const addTab = useCallback(() => {
     const newId = String(Date.now());
@@ -39,7 +98,8 @@ export function ConsultingTabsProvider({ children }: { children: ReactNode }) {
       return [...prev, { id: newId, label, step: { name: 'type-select' } }];
     });
     setActiveTabId(newId);
-  }, []);
+    navigate('/consulting');
+  }, [navigate]);
 
   const removeTab = useCallback((id: string) => {
     setTabs(prev => {
@@ -47,24 +107,28 @@ export function ConsultingTabsProvider({ children }: { children: ReactNode }) {
       const idx = prev.findIndex(t => t.id === id);
       const next = prev.filter(t => t.id !== id);
       if (activeTabId === id) {
-        setActiveTabId(next[Math.min(idx, next.length - 1)].id);
+        const nextActive = next[Math.min(idx, next.length - 1)];
+        setActiveTabId(nextActive.id);
+        navigate(stepToPath(nextActive.step));
       }
       return next;
     });
-  }, [activeTabId]);
+  }, [activeTabId, navigate]);
 
-  const navigateStep = useCallback((step: ConsultingStep) => {
-    setTabs(prev =>
-      prev.map(t => (t.id === activeTabId ? { ...t, step } : t))
-    );
-  }, [activeTabId]);
+  const handleSetActiveTab = useCallback((id: string) => {
+    setActiveTabId(id);
+    const tab = tabs.find(t => t.id === id);
+    if (tab) {
+      navigate(stepToPath(tab.step));
+    }
+  }, [tabs, navigate]);
 
   return (
     <ConsultingTabsCtx.Provider
       value={{
         tabs, activeTabId, activeTab,
         addTab, removeTab,
-        setActiveTab: setActiveTabId,
+        setActiveTab: handleSetActiveTab,
         navigateStep,
       }}
     >

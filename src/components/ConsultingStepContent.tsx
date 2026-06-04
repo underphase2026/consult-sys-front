@@ -137,12 +137,66 @@ function WirelessCarrierStep({ navigate }: { navigate: (s: ConsultingStep) => vo
   );
 }
 
-function WirelessDeviceStep(_: { carrier: string; navigate: (s: ConsultingStep) => void }) {
+function WirelessDeviceStep({ carrier, navigate }: { carrier: string; navigate: (s: ConsultingStep) => void }) {
   const [brandFilter, setBrandFilter] = useState<BrandFilter>('all');
-  const [selectedId, setSelectedId] = useState(DEVICES[0].id);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [deviceTypeOpen, setDeviceTypeOpen] = useState(false);
   const [selectedDeviceType, setSelectedDeviceType] = useState('단말기 유형');
+  const [searchQuery, setSearchQuery] = useState('');
   const deviceTypeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetchDevices = async () => {
+      setIsLoading(true);
+      try {
+        const token = localStorage.getItem('accessToken');
+        const apiCarrier = carrier.toUpperCase();
+        const res = await fetch(`/api/api/consultations/devices?networkType=WIRELESS&carrier=${apiCarrier}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        if (!res.ok) throw new Error('기기 목록을 불러오지 못했습니다.');
+        
+        const json = await res.json();
+        const dataList = Array.isArray(json) ? json : (json.data || []);
+        
+        const mapped: Device[] = dataList.map((d: any) => {
+          const nameLower = (d.deviceName || '').toLowerCase();
+          let brand = '기타';
+          if (nameLower.includes('galaxy') || nameLower.includes('갤럭시')) brand = 'Samsung';
+          else if (nameLower.includes('iphone') || nameLower.includes('아이폰')) brand = 'Apple';
+          
+          return {
+            id: String(d.id),
+            brand,
+            name: d.deviceName,
+            model: d.modelName || '',
+            price: `${(d.retailPrice || 0).toLocaleString()}원`,
+            support: `${(d.publicSubsidy || 0).toLocaleString()}원`,
+            remaining: `${(d.principal || 0).toLocaleString()}원`,
+            colors: [
+              { name: '소프트핑크', hex: '#F2B8C6' },
+              { name: '화이트',     hex: '#F5F5F0' },
+              { name: '블랙',       hex: '#1C1C1E' },
+            ],
+            specs: {
+              cpu: 'A19칩', ram: '8GB', storage: '256GB', display: '6.1인치',
+              camera: '전면: 1,200만\n후면: 4,800만', battery: '4005mah',
+              weight: '200g', released: '2026년 3월 11일',
+            },
+          };
+        });
+        setDevices(mapped);
+        if (mapped.length > 0) setSelectedId(mapped[0].id);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchDevices();
+  }, [carrier]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -154,14 +208,22 @@ function WirelessDeviceStep(_: { carrier: string; navigate: (s: ConsultingStep) 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filtered = DEVICES.filter(d => {
-    if (brandFilter === 'samsung') return d.brand === 'Samsung';
-    if (brandFilter === 'apple')   return d.brand === 'Apple';
-    if (brandFilter === 'other')   return d.brand !== 'Samsung' && d.brand !== 'Apple';
+  const filtered = devices.filter(d => {
+    if (brandFilter === 'samsung' && d.brand !== 'Samsung') return false;
+    if (brandFilter === 'apple' && d.brand !== 'Apple') return false;
+    if (brandFilter === 'other' && (d.brand === 'Samsung' || d.brand === 'Apple')) return false;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const matchName = d.name.toLowerCase().includes(q);
+      const matchModel = d.model.toLowerCase().includes(q);
+      if (!matchName && !matchModel) return false;
+    }
+
     return true;
   });
 
-  const selected = DEVICES.find(d => d.id === selectedId) ?? DEVICES[0];
+  const selected = devices.find(d => d.id === selectedId) ?? devices[0];
 
   return (
     <div className="pt-[60px] pb-[60px] flex flex-col items-center">
@@ -219,12 +281,18 @@ function WirelessDeviceStep(_: { carrier: string; navigate: (s: ConsultingStep) 
             </div>
 
             {/* Frame 645: 단말기 검색 */}
-            <button className="w-[280px] h-11 flex items-center justify-between py-3 pl-3 pr-2 rounded-lg bg-white border border-input-border text-sm text-[#9CA3AF] cursor-pointer">
-              <span>단말기 검색</span>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0">
-                <path d="M4 6l4 4 4-4" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <div className="relative w-[280px] h-11 shrink-0">
+              <input
+                type="text"
+                placeholder="단말기 검색"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-full flex items-center justify-between py-3 pl-3 pr-10 rounded-lg bg-white border border-input-border text-sm text-[#111827] placeholder:text-[#9CA3AF] outline-none focus:border-primary transition-colors"
+              />
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="absolute right-3 top-1/2 -translate-y-1/2 shrink-0 pointer-events-none">
+                <path d="M7.333 12.667A5.333 5.333 0 107.333 2a5.333 5.333 0 000 10.667zM14 14l-2.9-2.9" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-            </button>
+            </div>
 
             {/* Frame 694: 5GX 프리미엄 */}
             <button className="w-[344px] h-11 flex items-center justify-between py-3 pl-3 pr-2 rounded-lg bg-[#F8F9FA] border border-input-border text-sm text-[#9CA3AF] cursor-pointer">
@@ -253,43 +321,51 @@ function WirelessDeviceStep(_: { carrier: string; navigate: (s: ConsultingStep) 
 
             {/* 바디 */}
             <div className="flex-1 overflow-y-auto">
-              {filtered.map(device => (
-                <div
-                  key={device.id}
-                  onClick={() => setSelectedId(device.id)}
-                  className={`flex justify-between items-center h-16 py-4 px-5 shrink-0 self-stretch cursor-pointer border-b border-input-border text-base
-                    ${selectedId === device.id ? 'bg-[#E8F2FF]' : 'bg-white'}`}
-                >
-                  <span className="w-[156px] shrink-0 font-medium text-text-dark truncate">{device.name}</span>
-                  <span className="w-[124px] shrink-0 font-medium text-text-gray truncate">{device.model}</span>
-                  <span className="w-[92px] shrink-0 font-medium text-text-gray text-right">{device.price}</span>
-                  <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">{device.support}</span>
-                  <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">{device.remaining}</span>
-                  <span className="w-6 h-6 flex flex-col justify-center items-center shrink-0">
-                    <img src={UnionImg} alt="" className="w-[17px] h-[16px] shrink-0" />
-                  </span>
-                </div>
-              ))}
-              {Array.from({ length: 14 }).map((_, i) => (
-                <div
-                  key={`ph-${i}`}
-                  className="flex justify-between items-center h-16 py-4 px-5 shrink-0 self-stretch bg-white border-b border-input-border last:border-b-0 text-base"
-                >
-                  <span className="w-[156px] shrink-0 font-medium text-text-dark">기기명</span>
-                  <span className="w-[124px] shrink-0 font-medium text-text-gray">모델명</span>
-                  <span className="w-[92px] shrink-0 font-medium text-text-gray text-right">1,254,000원</span>
-                  <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">700,000원</span>
-                  <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">554,000원</span>
-                  <span className="w-6 h-6 flex flex-col justify-center items-center shrink-0">
-                    <img src={UnionImg} alt="" className="w-[17px] h-[16px] shrink-0" />
-                  </span>
-                </div>
-              ))}
+              {isLoading ? (
+                <div className="py-20 text-center text-text-gray">기종 목록을 불러오는 중...</div>
+              ) : filtered.length === 0 ? (
+                <div className="py-20 text-center text-text-gray">조회된 기기가 없습니다.</div>
+              ) : (
+                <>
+                  {filtered.map(device => (
+                    <div
+                      key={device.id}
+                      onClick={() => setSelectedId(device.id)}
+                      className={`flex justify-between items-center h-16 py-4 px-5 shrink-0 self-stretch cursor-pointer border-b border-input-border text-base
+                        ${selectedId === device.id ? 'bg-[#E8F2FF]' : 'bg-white'}`}
+                    >
+                      <span className="w-[156px] shrink-0 font-medium text-text-dark truncate">{device.name}</span>
+                      <span className="w-[124px] shrink-0 font-medium text-text-gray truncate">{device.model}</span>
+                      <span className="w-[92px] shrink-0 font-medium text-text-gray text-right">{device.price}</span>
+                      <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">{device.support}</span>
+                      <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">{device.remaining}</span>
+                      <span className="w-6 h-6 flex flex-col justify-center items-center shrink-0">
+                        <img src={UnionImg} alt="" className="w-[17px] h-[16px] shrink-0" />
+                      </span>
+                    </div>
+                  ))}
+                  {Array.from({ length: Math.max(0, 14 - filtered.length) }).map((_, i) => (
+                    <div
+                      key={`ph-${i}`}
+                      className="flex justify-between items-center h-16 py-4 px-5 shrink-0 self-stretch bg-white border-b border-input-border last:border-b-0 text-base"
+                    >
+                      <span className="w-[156px] shrink-0 font-medium text-text-dark">기기명</span>
+                      <span className="w-[124px] shrink-0 font-medium text-text-gray">모델명</span>
+                      <span className="w-[92px] shrink-0 font-medium text-text-gray text-right">-</span>
+                      <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">-</span>
+                      <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">-</span>
+                      <span className="w-6 h-6 flex flex-col justify-center items-center shrink-0">
+                        <img src={UnionImg} alt="" className="w-[17px] h-[16px] shrink-0" />
+                      </span>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </div>
 
           {/* 상세 패널 */}
-          <DetailPanel device={selected} key={selected.id} />
+          {selected && <DetailPanel device={selected} key={selected.id} />}
 
         </div>
       </div>

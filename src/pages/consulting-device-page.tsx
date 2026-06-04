@@ -7,64 +7,66 @@ const CARRIER_LABEL: Record<string, string> = {
   lgu: 'LG U+',
 };
 
-const DEVICES = [
-  {
-    id: 'galaxy-s25-ultra',
-    brand: 'Samsung',
-    name: 'Galaxy S25 Ultra',
-    storage: '256GB / 512GB / 1TB',
-    price: '1,899,800원~',
-    featured: true,
-  },
-  {
-    id: 'galaxy-s25',
-    brand: 'Samsung',
-    name: 'Galaxy S25',
-    storage: '128GB / 256GB',
-    price: '1,199,800원~',
-    featured: true,
-  },
-  {
-    id: 'iphone-16-pro',
-    brand: 'Apple',
-    name: 'iPhone 16 Pro',
-    storage: '128GB / 256GB / 512GB / 1TB',
-    price: '1,550,000원~',
-    featured: false,
-  },
-  {
-    id: 'iphone-16',
-    brand: 'Apple',
-    name: 'iPhone 16',
-    storage: '128GB / 256GB / 512GB',
-    price: '1,250,000원~',
-    featured: false,
-  },
-  {
-    id: 'galaxy-z-fold6',
-    brand: 'Samsung',
-    name: 'Galaxy Z Fold6',
-    storage: '256GB / 512GB',
-    price: '2,099,800원~',
-    featured: false,
-  },
-  {
-    id: 'galaxy-z-flip6',
-    brand: 'Samsung',
-    name: 'Galaxy Z Flip6',
-    storage: '256GB / 512GB',
-    price: '1,399,800원~',
-    featured: false,
-  },
-];
+interface DeviceItem {
+  id: string;
+  brand: string;
+  name: string;
+  storage: string;
+  price: string;
+  featured: boolean;
+}
 
-const FEATURED = DEVICES.filter(d => d.featured);
-const REST = DEVICES.filter(d => !d.featured);
+import { useState, useEffect } from 'react';
 
 export default function ConsultingDevicePage() {
   const navigate = useNavigate();
   const { carrier } = useParams<{ carrier: string }>();
   const carrierLabel = CARRIER_LABEL[carrier ?? ''] ?? carrier?.toUpperCase();
+
+  const [devices, setDevices] = useState<DeviceItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDevices = async () => {
+      setIsLoading(true);
+      try {
+        const token = localStorage.getItem('accessToken');
+        const apiCarrier = carrier?.toUpperCase() || 'SKT';
+        const res = await fetch(`/api/api/consultations/devices?networkType=WIRELESS&carrier=${apiCarrier}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        if (!res.ok) throw new Error('기기 목록을 불러오지 못했습니다.');
+        
+        const json = await res.json();
+        const dataList = Array.isArray(json) ? json : (json.data || []);
+        
+        const mapped: DeviceItem[] = dataList.map((d: any, idx: number) => {
+          const nameLower = (d.deviceName || '').toLowerCase();
+          let brand = '기타';
+          if (nameLower.includes('galaxy') || nameLower.includes('갤럭시')) brand = 'Samsung';
+          else if (nameLower.includes('iphone') || nameLower.includes('아이폰')) brand = 'Apple';
+          
+          return {
+            id: d.id,
+            brand,
+            name: d.deviceName,
+            storage: '256GB / 512GB', // 스펙에 없으므로 기본값
+            price: `${(d.retailPrice || 0).toLocaleString()}원~`,
+            featured: idx < 2
+          };
+        });
+        setDevices(mapped);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchDevices();
+  }, [carrier]);
+
+  const featuredDevices = devices.filter(d => d.featured);
+  const restDevices = devices.filter(d => !d.featured);
 
   return (
     <ConsultingLayout>
@@ -75,33 +77,39 @@ export default function ConsultingDevicePage() {
         </div>
 
         {/* 피처드 기종 (888:188 + 432:188 비율) */}
-        <div className="flex gap-4">
-          {FEATURED[0] && (
-            <DeviceCard
-              device={FEATURED[0]}
-              className="flex-[2]"
-              onSelect={() => navigate(`/consulting/wireless/${carrier}/${FEATURED[0].id}`)}
-            />
-          )}
-          {FEATURED[1] && (
-            <DeviceCard
-              device={FEATURED[1]}
-              className="flex-[1]"
-              onSelect={() => navigate(`/consulting/wireless/${carrier}/${FEATURED[1].id}`)}
-            />
-          )}
-        </div>
+        {isLoading ? (
+          <div className="py-20 text-center text-text-gray">기종 목록을 불러오는 중...</div>
+        ) : (
+          <>
+            <div className="flex gap-4">
+              {featuredDevices[0] && (
+                <DeviceCard
+                  device={featuredDevices[0]}
+                  className="flex-[2]"
+                  onSelect={() => navigate(`/consulting/wireless/${carrier}/${featuredDevices[0].id}`)}
+                />
+              )}
+              {featuredDevices[1] && (
+                <DeviceCard
+                  device={featuredDevices[1]}
+                  className="flex-[1]"
+                  onSelect={() => navigate(`/consulting/wireless/${carrier}/${featuredDevices[1].id}`)}
+                />
+              )}
+            </div>
 
-        {/* 나머지 기종 */}
-        <div className="grid grid-cols-4 gap-4">
-          {REST.map(device => (
-            <DeviceCard
-              key={device.id}
-              device={device}
-              onSelect={() => navigate(`/consulting/wireless/${carrier}/${device.id}`)}
-            />
-          ))}
-        </div>
+            {/* 나머지 기종 */}
+            <div className="grid grid-cols-4 gap-4">
+              {restDevices.map(device => (
+                <DeviceCard
+                  key={device.id}
+                  device={device}
+                  onSelect={() => navigate(`/consulting/wireless/${carrier}/${device.id}`)}
+                />
+              ))}
+            </div>
+          </>
+        )}
 
         <button
           className="text-sm text-text-muted hover:text-text-gray bg-transparent border-none cursor-pointer underline self-start"
@@ -119,7 +127,7 @@ function DeviceCard({
   className = '',
   onSelect,
 }: {
-  device: typeof DEVICES[0];
+  device: DeviceItem;
   className?: string;
   onSelect: () => void;
 }) {

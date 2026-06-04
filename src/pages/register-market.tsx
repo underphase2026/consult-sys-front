@@ -1,10 +1,135 @@
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PrivateHeader from '../components/PrivateHeader';
 import Footer from '../components/Footer';
 import marketIcon from '../images/market.svg';
+import PostcodeModal from '../components/PostcodeModal';
 
 export default function RegisterMarket() {
   const navigate = useNavigate();
+  const detailedAddressInputRef = useRef<HTMLInputElement>(null);
+
+  const [formData, setFormData] = useState({
+    storeBusinessName: '',
+    storeName: '',
+    businessRegistrationNumber: '',
+    postcode: '',
+    roadAddress: '',
+    detailedAddress: '',
+    storePhonenumber: '',
+  });
+
+  const [isPostcodeModalOpen, setIsPostcodeModalOpen] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [verifyStatus, setVerifyStatus] = useState<'none' | 'success' | 'error'>('none');
+  const [verifyMessage, setVerifyMessage] = useState('');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleVerifyBusinessNumber = async () => {
+    if (!formData.businessRegistrationNumber) {
+      setVerifyStatus('error');
+      setVerifyMessage('사업자등록번호를 입력해주세요.');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch('/api/stores/business-verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ businessRegistrationNumber: formData.businessRegistrationNumber.replace(/-/g, '') })
+      });
+      if (res.ok) {
+        setIsVerified(true);
+        setVerifyStatus('success');
+        setVerifyMessage('사업자등록번호 인증이 완료되었습니다.');
+      } else {
+        const errorData = await res.json();
+        setIsVerified(false);
+        setVerifyStatus('error');
+        if (res.status === 404 || errorData.message?.includes('존재하지 않는')) {
+          setVerifyMessage('존재하지 않는 사업자등록번호입니다.');
+        } else if (errorData.message?.includes('폐업')) {
+          setVerifyMessage('폐업인 사업자등록번호입니다.');
+        } else {
+          setVerifyMessage(errorData.message || '인증에 실패했습니다.');
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      setIsVerified(false);
+      setVerifyStatus('error');
+      setVerifyMessage('오류가 발생했습니다.');
+    }
+  };
+
+  const handlePostcodeComplete = (data: { zonecode: string; address: string }) => {
+    setFormData((prev) => ({
+      ...prev,
+      postcode: data.zonecode,
+      roadAddress: data.address,
+    }));
+    
+    // Allow React state to batch and update DOM before focusing
+    setTimeout(() => {
+      detailedAddressInputRef.current?.focus();
+    }, 100);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isVerified) {
+      setVerifyStatus('error');
+      setVerifyMessage('사업자등록번호 인증을 완료해주세요.');
+      return;
+    }
+    
+    if (!formData.postcode || !formData.roadAddress) {
+      alert('매장 주소를 검색하여 입력해주세요.');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const payload = {
+        storeBusinessName: formData.storeBusinessName,
+        storeName: formData.storeName,
+        businessRegistrationNumber: formData.businessRegistrationNumber.replace(/-/g, ''),
+        postcode: formData.postcode,
+        roadAddress: formData.roadAddress,
+        detailedAddress: formData.detailedAddress,
+        lat: 37.5665, // 임시 위도
+        lng: 126.9780, // 임시 경도
+        ...(formData.storePhonenumber ? { storePhonenumber: formData.storePhonenumber.replace(/-/g, '') } : {}),
+      };
+
+      const res = await fetch('/api/stores', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        alert('매장이 성공적으로 등록되었습니다.');
+        navigate('/my-market');
+      } else {
+        const errData = await res.json();
+        alert(errData.message || '매장 등록에 실패했습니다.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('오류가 발생했습니다.');
+    }
+  };
 
   return (
     <div className="app-page">
@@ -19,16 +144,17 @@ export default function RegisterMarket() {
             <span className="block text-base font-normal text-text-gray leading-7">매장 정보를 입력해주세요</span>
           </div>
 
-          <form
-            className="w-full flex flex-col"
-            onSubmit={(e) => { e.preventDefault(); navigate('/my-market'); }}
-          >
+          <form className="w-full flex flex-col" onSubmit={handleSubmit}>
             <div className="field-group">
               <label className="field-label">사업자 상호명</label>
               <input
                 type="text"
+                name="storeBusinessName"
+                value={formData.storeBusinessName}
+                onChange={handleChange}
                 placeholder="사업자등록증 상 상호명을 입력해주세요"
                 className="form-input"
+                required
               />
             </div>
 
@@ -36,20 +162,48 @@ export default function RegisterMarket() {
               <label className="field-label">매장명</label>
               <input
                 type="text"
+                name="storeName"
+                value={formData.storeName}
+                onChange={handleChange}
                 placeholder="운영 중인 매장명을 입력해 주세요"
                 className="form-input"
+                required
               />
             </div>
 
             <div className="field-group">
               <label className="field-label">사업자등록번호</label>
-              <div className="input-wrap">
-                <input
-                  type="text"
-                  placeholder="-없이 숫자만 입력해 주세요"
-                  className="inner-input"
-                />
-                <button type="button" className="action-btn">인증</button>
+              <div className="flex flex-col gap-1.5">
+                <div className="input-wrap">
+                  <input
+                    type="text"
+                    name="businessRegistrationNumber"
+                    value={formData.businessRegistrationNumber}
+                    onChange={(e) => {
+                      handleChange(e);
+                      setIsVerified(false);
+                      setVerifyStatus('none');
+                      setVerifyMessage('');
+                    }}
+                    placeholder="-없이 숫자만 입력해 주세요"
+                    className="inner-input"
+                    required
+                    readOnly={isVerified}
+                  />
+                  <button
+                    type="button"
+                    className="action-btn disabled:bg-input-disabled-bg disabled:text-text-muted disabled:border-input-border disabled:cursor-not-allowed"
+                    onClick={handleVerifyBusinessNumber}
+                    disabled={isVerified}
+                  >
+                    {isVerified ? '인증완료' : '인증'}
+                  </button>
+                </div>
+                {verifyStatus !== 'none' && (
+                  <span className={`text-[13px] ml-1 font-medium ${verifyStatus === 'success' ? 'text-primary' : 'text-[#EF4444]'}`}>
+                    {verifyMessage}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -58,11 +212,16 @@ export default function RegisterMarket() {
               <div className="flex gap-2">
                 <input
                   type="text"
+                  name="postcode"
+                  value={formData.postcode}
+                  readOnly
                   placeholder="우편번호"
-                  className="form-input flex-1"
+                  className="form-input flex-1 bg-gray-50 cursor-not-allowed text-text-gray"
+                  required
                 />
                 <button
                   type="button"
+                  onClick={() => setIsPostcodeModalOpen(true)}
                   className="w-[100px] h-input shrink-0 text-base font-semibold text-link bg-secondary-bg border-none rounded-lg cursor-pointer hover:bg-secondary-hover"
                 >
                   검색
@@ -70,8 +229,22 @@ export default function RegisterMarket() {
               </div>
               <input
                 type="text"
-                placeholder="상세주소"
-                className="form-input"
+                name="roadAddress"
+                value={formData.roadAddress}
+                readOnly
+                placeholder="기본 주소"
+                className="form-input mt-2 bg-gray-50 cursor-not-allowed text-text-gray"
+                required
+              />
+              <input
+                type="text"
+                name="detailedAddress"
+                ref={detailedAddressInputRef}
+                value={formData.detailedAddress}
+                onChange={handleChange}
+                placeholder="상세 주소를 입력해주세요"
+                className="form-input mt-2"
+                required
               />
             </div>
 
@@ -82,6 +255,9 @@ export default function RegisterMarket() {
               </div>
               <input
                 type="tel"
+                name="storePhonenumber"
+                value={formData.storePhonenumber}
+                onChange={handleChange}
                 placeholder="-없이 숫자만 입력해주세요"
                 className="form-input"
               />
@@ -94,6 +270,12 @@ export default function RegisterMarket() {
         </div>
       </main>
       <Footer />
+      
+      <PostcodeModal 
+        isOpen={isPostcodeModalOpen} 
+        onClose={() => setIsPostcodeModalOpen(false)} 
+        onComplete={handlePostcodeComplete} 
+      />
     </div>
   );
 }

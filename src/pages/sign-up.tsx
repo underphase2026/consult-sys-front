@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import PublicHeader from '../components/PublicHeader';
 import Footer from '../components/Footer';
 import signUpImg from '../images/sign-up.svg';
+import useTimer from '../hooks/useTimer';
 
 function CheckIcon({ checked }: { checked: boolean }) {
   return (
@@ -29,11 +30,17 @@ export default function SignUp() {
   const [role, setRole] = useState<'owner' | 'staff'>('owner');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [isVerificationVisible, setIsVerificationVisible] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isPhoneDisabled, setIsPhoneDisabled] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [agreeAll, setAgreeAll] = useState(false);
   const [agrees, setAgrees] = useState([false, false, false]);
+
+  const timer = useTimer(300);
 
   const toggleAgreeAll = () => {
     const next = !agreeAll;
@@ -45,6 +52,67 @@ export default function SignUp() {
     const next = agrees.map((v, idx) => (idx === i ? !v : v));
     setAgrees(next);
     setAgreeAll(next.every(Boolean));
+  };
+
+  const handleSendVerificationCode = async () => {
+    if (!phone) {
+      alert('휴대폰 번호를 입력해주세요.');
+      return;
+    }
+    try {
+      const response = await fetch('/api/auth/sms/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phoneNumber: phone.replace(/-/g, '') }),
+      });
+
+      if (response.ok) {
+        setIsVerificationVisible(true);
+        setIsPhoneDisabled(true);
+        timer.reset(300);
+        timer.start();
+        alert('인증번호가 발송되었습니다.');
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || '인증번호 발송에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('오류가 발생했습니다.');
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!verificationCode || verificationCode.length !== 6) {
+      alert('6자리 인증번호를 입력해주세요.');
+      return;
+    }
+    try {
+      const response = await fetch('/api/auth/sms/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          phoneNumber: phone.replace(/-/g, ''), 
+          verificationCode 
+        }),
+      });
+
+      if (response.ok) {
+        timer.stop();
+        setIsVerificationVisible(false);
+        setIsVerified(true);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || '인증번호가 일치하지 않습니다.');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('오류가 발생했습니다.');
+    }
   };
 
   return (
@@ -95,10 +163,40 @@ export default function SignUp() {
                 <input
                   type="tel" placeholder="-없이 숫자만 입력해주세요" value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="inner-input"
+                  className={`inner-input ${isPhoneDisabled || isVerified ? 'bg-gray-50 cursor-not-allowed text-text-gray' : ''}`}
+                  disabled={isPhoneDisabled || isVerified}
                 />
-                <button type="button" className="action-btn">인증</button>
+                <button 
+                  type="button" 
+                  className="action-btn shrink-0"
+                  onClick={handleSendVerificationCode}
+                  disabled={isVerified}
+                >
+                  {isVerified ? '인증 완료' : (isPhoneDisabled ? '재전송' : '인증')}
+                </button>
               </div>
+              {isVerificationVisible && (
+                <div className="input-wrap mt-2 relative">
+                  <input
+                    type="text" placeholder="인증번호 6자리 입력" value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    className="inner-input pr-16"
+                    maxLength={6}
+                  />
+                  {(timer.isActive || timer.timeLeft === 0) && (
+                    <span className="absolute right-24 text-[13px] font-medium text-red-500">
+                      {timer.formatTime()}
+                    </span>
+                  )}
+                  <button 
+                    type="button" 
+                    className="action-btn shrink-0"
+                    onClick={handleVerifyCode}
+                  >
+                    확인
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="field-group">

@@ -17,6 +17,17 @@ const MY_PAGE_TABS = [
 ] as const;
 type MainTab = typeof MY_PAGE_TABS[number]['key'];
 
+interface UserProfileResponseDto {
+  id: string;
+  phoneNumber: string;
+  name: string;
+  email?: string;
+  birthDate?: string;
+  marketingAgreed?: boolean;
+  role: string;
+  referralCode: string;
+}
+
 export default function MyPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -61,12 +72,114 @@ export default function MyPage() {
 
 function InfoTab() {
   const navigate = useNavigate();
+  const [profile, setProfile] = useState<UserProfileResponseDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const [agreeMarketing, setAgreeMarketing] = useState(false);
   const [profileHovered, setProfileHovered] = useState(false);
   const [profileSrc, setProfileSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
+
+  const [email, setEmail] = useState('');
+  const [birthYear, setBirthYear] = useState('');
+  const [birthMonth, setBirthMonth] = useState('');
+  const [birthDay, setBirthDay] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const handleCopyReferral = () => {
+    if (profile?.referralCode) {
+      navigator.clipboard.writeText(profile.referralCode).then(() => {
+        setToast({ type: 'success', message: '추천인 코드가 복사되었습니다' });
+      }).catch(() => {
+        setToast({ type: 'error', message: '복사에 실패했습니다' });
+      });
+    }
+  };
+
+  const handleUpdateInfo = async () => {
+    setIsUpdating(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      let birthDate = undefined;
+      if (birthYear && birthMonth && birthDay) {
+         birthDate = `${birthYear}-${birthMonth.padStart(2, '0')}-${birthDay.padStart(2, '0')}`;
+      }
+      
+      const payload = {
+        email,
+        birthDate,
+        marketingAgreed: agreeMarketing,
+      };
+
+      const response = await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) {
+        throw new Error('정보 수정에 실패했습니다.');
+      }
+      
+      setToast({ type: 'success', message: '성공적으로 수정되었습니다.' });
+    } catch (err: any) {
+      setToast({ type: 'error', message: err.message });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setIsLoading(true);
+      setErrorMsg(null);
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          navigate('/sign-in');
+          return;
+        }
+        const response = await fetch('/api/users/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+          if (response.status === 401) {
+            navigate('/sign-in');
+            return;
+          }
+          throw new Error('내 정보를 불러오는데 실패했습니다.');
+        }
+        const resData: { success: boolean; data: UserProfileResponseDto } = await response.json();
+        setProfile(resData.data);
+        setEmail(resData.data.email || '');
+        setAgreeMarketing(resData.data.marketingAgreed || false);
+        if (resData.data.birthDate) {
+          const [y, m, d] = resData.data.birthDate.split('-');
+          setBirthYear(y || '');
+          setBirthMonth(m || '');
+          setBirthDay(d || '');
+        }
+      } catch (err: any) {
+        setErrorMsg(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [navigate]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -74,6 +187,14 @@ function InfoTab() {
   };
 
   const avatarSrc = profileSrc ?? (profileHovered ? personalHoverImg : personalImg);
+
+  if (isLoading) {
+    return <div className="py-20 text-center text-text-gray">로딩 중...</div>;
+  }
+
+  if (errorMsg || !profile) {
+    return <div className="py-20 text-center text-red-500">{errorMsg || '정보를 불러올 수 없습니다.'}</div>;
+  }
 
   return (
     <div>
@@ -93,18 +214,18 @@ function InfoTab() {
           className="hidden"
           onChange={handleFileChange}
         />
-        <span className="text-lg font-normal text-text-dark leading-6">홍길동</span>
+        <span className="text-lg font-normal text-text-dark leading-6">{profile.name}</span>
       </div>
 
       <div className="field-group">
         <label className="field-label">이름</label>
-        <input type="text" defaultValue="홍길동" className="form-input-disabled" />
+        <input type="text" defaultValue={profile.name} disabled className="form-input-disabled" />
       </div>
 
       <div className="field-group">
         <label className="field-label">휴대폰 번호</label>
         <div className="input-wrap-gray">
-          <input type="tel" defaultValue="010-1234-5678" className="inner-input-gray" />
+          <input type="tel" defaultValue={profile.phoneNumber} disabled className="inner-input-gray" />
           <button type="button" className="action-btn" onClick={() => setShowPhoneModal(true)}>변경</button>
         </div>
       </div>
@@ -114,7 +235,8 @@ function InfoTab() {
         <div className="input-wrap-gray">
           <input
             type="password"
-            defaultValue="password"
+            defaultValue="********"
+            disabled
             className="inner-input-gray tracking-[4px]"
           />
           <button type="button" className="action-btn" onClick={() => setShowPasswordModal(true)}>변경</button>
@@ -127,9 +249,9 @@ function InfoTab() {
           <span className="label-optional">(선택)</span>
         </div>
         <div className="flex gap-2">
-          <input type="text" placeholder="YYYY" className="form-input flex-[1.4]" />
-          <input type="text" placeholder="MM" className="form-input flex-1" />
-          <input type="text" placeholder="DD" className="form-input flex-1" />
+          <input type="text" placeholder="YYYY" value={birthYear} onChange={(e) => setBirthYear(e.target.value)} className="form-input flex-[1.4]" />
+          <input type="text" placeholder="MM" value={birthMonth} onChange={(e) => setBirthMonth(e.target.value)} className="form-input flex-1" />
+          <input type="text" placeholder="DD" value={birthDay} onChange={(e) => setBirthDay(e.target.value)} className="form-input flex-1" />
         </div>
       </div>
 
@@ -138,14 +260,18 @@ function InfoTab() {
           <label className="field-label">이메일</label>
           <span className="label-optional">(선택)</span>
         </div>
-        <input type="email" placeholder="example@yo-jeong.com" className="form-input" />
+        <input type="email" placeholder="example@yo-jeong.com" value={email} onChange={(e) => setEmail(e.target.value)} className="form-input" />
       </div>
 
       <div className="field-group">
         <label className="field-label">추천인 코드</label>
         <div className="input-wrap">
-          <span className="flex-1 text-sm text-text-muted">DEGFEI</span>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <span className="flex-1 text-sm text-text-muted">{profile.referralCode || '발급된 코드가 없습니다'}</span>
+          <svg 
+            width="20" height="20" viewBox="0 0 20 20" fill="none"
+            className="cursor-pointer"
+            onClick={handleCopyReferral}
+          >
             <rect x="7" y="1" width="12" height="12" rx="2" stroke="#5aaaff" strokeWidth="1.5" />
             <rect x="1" y="7" width="12" height="12" rx="2" stroke="#5aaaff" strokeWidth="1.5" fill="white" />
           </svg>
@@ -169,7 +295,13 @@ function InfoTab() {
       </div>
 
       <div className="submit-wrap">
-        <button className="btn-primary">정보수정</button>
+        <button 
+          className="btn-primary disabled:opacity-50"
+          onClick={handleUpdateInfo}
+          disabled={isUpdating}
+        >
+          {isUpdating ? '수정 중...' : '정보수정'}
+        </button>
       </div>
 
       <div className="pt-5">
@@ -183,6 +315,13 @@ function InfoTab() {
 
       {showPhoneModal && <PhoneChangeModal onClose={() => setShowPhoneModal(false)} />}
       {showPasswordModal && <PasswordChangeModal onClose={() => setShowPasswordModal(false)} requireCurrent />}
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onDismiss={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

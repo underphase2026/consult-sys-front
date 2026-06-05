@@ -75,7 +75,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate }: Props) {
   void carrierLabel; // used for future label display
 
   return (
-    <div className="flex flex-col items-start gap-[31px] flex-[1_0_0] self-stretch pt-[88px] pr-[388px] pb-[182px] pl-5">
+    <div className="flex-[1_0_0] self-stretch">
 
         {/* A/B 패널 */}
         <div className="bg-white border border-input-border rounded-xl overflow-hidden">

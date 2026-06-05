@@ -15,31 +15,16 @@ const planBadge = (plan: string) =>
       : 'text-text-muted bg-input-disabled-bg'
   }`;
 
+import { useStore } from '../hooks/useStore';
+
 export default function MyMarket() {
   const navigate = useNavigate();
   const [stores, setStores] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { fetchMyStores, isLoading } = useStore();
 
   useEffect(() => {
-    const fetchStores = async () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        const res = await fetch('/api/stores/mine', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        if (res.ok) {
-          const json = await res.json();
-          const dataList = Array.isArray(json) ? json : (json.data || []);
-          setStores(dataList);
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchStores();
-  }, []);
+    fetchMyStores().then(data => setStores(data));
+  }, [fetchMyStores]);
 
   const hasStores = stores.length > 0;
 

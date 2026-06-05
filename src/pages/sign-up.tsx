@@ -4,6 +4,7 @@ import PublicHeader from '../components/PublicHeader';
 import Footer from '../components/Footer';
 import signUpImg from '../images/sign-up.svg';
 import useTimer from '../hooks/useTimer';
+import { useAuth } from '../hooks/useAuth';
 
 function CheckIcon({ checked }: { checked: boolean }) {
   return (
@@ -54,33 +55,22 @@ export default function SignUp() {
     setAgreeAll(next.every(Boolean));
   };
 
+  const { sendVerificationCode, verifyCode } = useAuth();
+
   const handleSendVerificationCode = async () => {
     if (!phone) {
       alert('휴대폰 번호를 입력해주세요.');
       return;
     }
     try {
-      const response = await fetch('/api/auth/sms/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phoneNumber: phone.replace(/-/g, '') }),
-      });
-
-      if (response.ok) {
-        setIsVerificationVisible(true);
-        setIsPhoneDisabled(true);
-        timer.reset(300);
-        timer.start();
-        alert('인증번호가 발송되었습니다.');
-      } else {
-        const errorData = await response.json();
-        alert(errorData.message || '인증번호 발송에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error(error);
-      alert('오류가 발생했습니다.');
+      await sendVerificationCode(phone.replace(/-/g, ''));
+      setIsVerificationVisible(true);
+      setIsPhoneDisabled(true);
+      timer.reset(300);
+      timer.start();
+      alert('인증번호가 발송되었습니다.');
+    } catch (error: any) {
+      alert(error.message || '오류가 발생했습니다.');
     }
   };
 
@@ -90,28 +80,12 @@ export default function SignUp() {
       return;
     }
     try {
-      const response = await fetch('/api/auth/sms/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          phoneNumber: phone.replace(/-/g, ''), 
-          verificationCode 
-        }),
-      });
-
-      if (response.ok) {
-        timer.stop();
-        setIsVerificationVisible(false);
-        setIsVerified(true);
-      } else {
-        const errorData = await response.json();
-        alert(errorData.message || '인증번호가 일치하지 않습니다.');
-      }
-    } catch (error) {
-      console.error(error);
-      alert('오류가 발생했습니다.');
+      await verifyCode(phone.replace(/-/g, ''), verificationCode);
+      timer.stop();
+      setIsVerificationVisible(false);
+      setIsVerified(true);
+    } catch (error: any) {
+      alert(error.message || '오류가 발생했습니다.');
     }
   };
 

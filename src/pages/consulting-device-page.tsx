@@ -7,16 +7,10 @@ const CARRIER_LABEL: Record<string, string> = {
   lgu: 'LG U+',
 };
 
-interface DeviceItem {
-  id: string;
-  brand: string;
-  name: string;
-  storage: string;
-  price: string;
-  featured: boolean;
-}
-
 import { useState, useEffect } from 'react';
+import { useConsulting, type DeviceData } from '../hooks/useConsulting';
+
+interface DeviceItem extends Omit<DeviceData, 'specs' | 'colors'> {}
 
 export default function ConsultingDevicePage() {
   const navigate = useNavigate();
@@ -24,46 +18,23 @@ export default function ConsultingDevicePage() {
   const carrierLabel = CARRIER_LABEL[carrier ?? ''] ?? carrier?.toUpperCase();
 
   const [devices, setDevices] = useState<DeviceItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { fetchDevices, isLoading } = useConsulting();
 
   useEffect(() => {
-    const fetchDevices = async () => {
-      setIsLoading(true);
-      try {
-        const token = localStorage.getItem('accessToken');
-        const apiCarrier = carrier?.toUpperCase() || 'SKT';
-        const res = await fetch(`/api/api/consultations/devices?networkType=WIRELESS&carrier=${apiCarrier}`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        if (!res.ok) throw new Error('기기 목록을 불러오지 못했습니다.');
-        
-        const json = await res.json();
-        const dataList = Array.isArray(json) ? json : (json.data || []);
-        
-        const mapped: DeviceItem[] = dataList.map((d: any, idx: number) => {
-          const nameLower = (d.deviceName || '').toLowerCase();
-          let brand = '기타';
-          if (nameLower.includes('galaxy') || nameLower.includes('갤럭시')) brand = 'Samsung';
-          else if (nameLower.includes('iphone') || nameLower.includes('아이폰')) brand = 'Apple';
-          
-          return {
-            id: d.id,
-            brand,
-            name: d.deviceName,
-            storage: '256GB / 512GB', // 스펙에 없으므로 기본값
-            price: `${(d.retailPrice || 0).toLocaleString()}원~`,
-            featured: idx < 2
-          };
-        });
-        setDevices(mapped);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchDevices();
-  }, [carrier]);
+    fetchDevices(carrier ?? 'SKT').then(data => {
+      const mapped = data.map(d => ({
+        id: d.id,
+        brand: d.brand,
+        name: d.name,
+        storage: d.specs.storage,
+        price: d.price,
+        featured: d.featured || false,
+        support: d.support,
+        remaining: d.remaining,
+      }));
+      setDevices(mapped);
+    });
+  }, [carrier, fetchDevices]);
 
   const featuredDevices = devices.filter(d => d.featured);
   const restDevices = devices.filter(d => !d.featured);

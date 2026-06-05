@@ -15,7 +15,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // 토큰 검사 및 리다이렉트
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = (localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken'));
     if (!token && !publicPaths.includes(location.pathname)) {
       navigate('/sign-in', { replace: true });
     }
@@ -28,7 +28,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       try {
         const response = await originalFetch(...args);
         if (response.status === 401) {
-          localStorage.removeItem('accessToken');
+          localStorage.removeItem('accessToken'); sessionStorage.removeItem('accessToken');;
           if (!publicPaths.includes(window.location.pathname)) {
             window.location.href = '/sign-in';
           }

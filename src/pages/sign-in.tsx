@@ -6,15 +6,7 @@ import PasswordChangeModal from '../components/PasswordChangeModal';
 import yojeongSymbol from '../images/yojeong_simbol.svg';
 import passwordDots from '../images/password.svg';
 
-interface LoginResponseDto {
-  accessToken: string;
-}
-
-interface ErrorResponse {
-  statusCode: number;
-  message: string | string[];
-  error: string;
-}
+import { useAuth } from '../hooks/useAuth';
 
 export default function SignIn() {
   const navigate = useNavigate();
@@ -23,34 +15,16 @@ export default function SignIn() {
   const [keepLogin, setKeepLogin] = useState(false);
   const [pwFocused, setPwFocused] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const { login, isLoading, errorMsg } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
-    setIsLoading(true);
-
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: phone, password }),
-      });
-
-      if (!response.ok) {
-        const errorData: ErrorResponse = await response.json();
-        const msg = Array.isArray(errorData.message) ? errorData.message[0] : errorData.message;
-        throw new Error(msg || '로그인에 실패했습니다.');
-      }
-
-      const resData: { success: boolean; data: LoginResponseDto } = await response.json();
-      localStorage.setItem('accessToken', resData.data.accessToken);
+      await login(phone, password, keepLogin);
       navigate('/my-market');
-    } catch (err: any) {
-      setErrorMsg(err.message);
-    } finally {
-      setIsLoading(false);
+    } catch (err) {
+      // errorMsg is handled by useAuth
     }
   };
 

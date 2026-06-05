@@ -17,16 +17,7 @@ const MY_PAGE_TABS = [
 ] as const;
 type MainTab = typeof MY_PAGE_TABS[number]['key'];
 
-interface UserProfileResponseDto {
-  id: string;
-  phoneNumber: string;
-  name: string;
-  email?: string;
-  birthDate?: string;
-  marketingAgreed?: boolean;
-  role: string;
-  referralCode: string;
-}
+import { useUser, type UserProfileResponseDto } from '../hooks/useUser';
 
 export default function MyPage() {
   const navigate = useNavigate();
@@ -72,9 +63,7 @@ export default function MyPage() {
 
 function InfoTab() {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<UserProfileResponseDto | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { profile, isLoading, errorMsg, fetchProfile, updateProfile } = useUser();
 
   const [agreeMarketing, setAgreeMarketing] = useState(false);
   const [profileHovered, setProfileHovered] = useState(false);
@@ -109,7 +98,6 @@ function InfoTab() {
   const handleUpdateInfo = async () => {
     setIsUpdating(true);
     try {
-      const token = localStorage.getItem('accessToken');
       let birthDate = undefined;
       if (birthYear && birthMonth && birthDay) {
          birthDate = `${birthYear}-${birthMonth.padStart(2, '0')}-${birthDay.padStart(2, '0')}`;
@@ -121,18 +109,7 @@ function InfoTab() {
         marketingAgreed: agreeMarketing,
       };
 
-      const response = await fetch('/api/users/me', {
-        method: 'PATCH',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify(payload)
-      });
-      
-      if (!response.ok) {
-        throw new Error('정보 수정에 실패했습니다.');
-      }
+      await updateProfile(payload);
       
       setToast({ type: 'success', message: '성공적으로 수정되었습니다.' });
     } catch (err: any) {
@@ -143,43 +120,19 @@ function InfoTab() {
   };
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      setIsLoading(true);
-      setErrorMsg(null);
-      try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
-          navigate('/sign-in');
-          return;
-        }
-        const response = await fetch('/api/users/me', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) {
-          if (response.status === 401) {
-            navigate('/sign-in');
-            return;
-          }
-          throw new Error('내 정보를 불러오는데 실패했습니다.');
-        }
-        const resData: { success: boolean; data: UserProfileResponseDto } = await response.json();
-        setProfile(resData.data);
-        setEmail(resData.data.email || '');
-        setAgreeMarketing(resData.data.marketingAgreed || false);
-        if (resData.data.birthDate) {
-          const [y, m, d] = resData.data.birthDate.split('-');
+    fetchProfile().then((data) => {
+      if (data) {
+        setEmail(data.email || '');
+        setAgreeMarketing(data.marketingAgreed || false);
+        if (data.birthDate) {
+          const [y, m, d] = data.birthDate.split('-');
           setBirthYear(y || '');
           setBirthMonth(m || '');
           setBirthDay(d || '');
         }
-      } catch (err: any) {
-        setErrorMsg(err.message);
-      } finally {
-        setIsLoading(false);
       }
-    };
-    fetchProfile();
-  }, [navigate]);
+    });
+  }, [fetchProfile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

@@ -21,21 +21,9 @@ const BRAND_FILTERS = [
   { key: 'other',   label: '기타' },
 ] as const;
 
+import { useConsulting, type DeviceData as Device } from '../hooks/useConsulting';
+
 type BrandFilter = typeof BRAND_FILTERS[number]['key'];
-
-type DeviceColor = { name: string; hex: string };
-
-type Device = {
-  id: string;
-  brand: string;
-  name: string;
-  model: string;
-  price: string;
-  support: string;
-  remaining: string;
-  colors: DeviceColor[];
-  specs: Record<string, string>;
-};
 
 const DEVICE_IMAGES: Record<string, string> = {
   'iphone-17e': Iphone17eImg,
@@ -141,67 +129,19 @@ function WirelessDeviceStep({ carrier, navigate }: { carrier: string; navigate: 
   const [brandFilter, setBrandFilter] = useState<BrandFilter>('all');
   const [devices, setDevices] = useState<Device[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [deviceTypeOpen, setDeviceTypeOpen] = useState(false);
   const [selectedDeviceType, setSelectedDeviceType] = useState('단말기 유형');
   const [searchQuery, setSearchQuery] = useState('');
   const deviceTypeRef = useRef<HTMLDivElement>(null);
+  
+  const { fetchDevices, isLoading } = useConsulting();
 
   useEffect(() => {
-    const fetchDevices = async () => {
-      setIsLoading(true);
-      try {
-        const token = localStorage.getItem('accessToken');
-        const apiCarrier = carrier.toUpperCase();
-        const res = await fetch(`/api/api/consultations/devices?networkType=WIRELESS&carrier=${apiCarrier}`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        if (!res.ok) throw new Error('기기 목록을 불러오지 못했습니다.');
-        
-        const json = await res.json();
-        const dataList = Array.isArray(json) ? json : (json.data || []);
-        
-        const mapped: Device[] = dataList.map((d: any) => {
-          const nameLower = (d.deviceName || '').toLowerCase();
-          let brand = '기타';
-          if (nameLower.includes('galaxy') || nameLower.includes('갤럭시')) brand = 'Samsung';
-          else if (nameLower.includes('iphone') || nameLower.includes('아이폰')) brand = 'Apple';
-          
-          return {
-            id: String(d.id),
-            brand,
-            name: d.deviceName,
-            model: d.modelName || '',
-            price: `${(d.retailPrice || 0).toLocaleString()}원`,
-            support: `${(d.publicSubsidy || 0).toLocaleString()}원`,
-            remaining: `${(d.principal || 0).toLocaleString()}원`,
-            colors: [
-              { name: '소프트핑크', hex: '#F2B8C6' },
-              { name: '화이트',     hex: '#F5F5F0' },
-              { name: '블랙',       hex: '#1C1C1E' },
-            ],
-            specs: {
-              cpu: d.specs?.cpu || '-',
-              ram: d.specs?.ram || '-',
-              storage: d.specs?.storage || '-',
-              display: d.specs?.display || '-',
-              camera: d.specs?.camera || '-',
-              battery: d.specs?.battery || '-',
-              weight: d.specs?.weight || '-',
-              released: d.releaseDate ? new Date(d.releaseDate).toLocaleDateString('ko-KR') : '-',
-            },
-          };
-        });
-        setDevices(mapped);
-        if (mapped.length > 0) setSelectedId(mapped[0].id);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchDevices();
-  }, [carrier]);
+    fetchDevices(carrier).then(data => {
+      setDevices(data);
+      if (data.length > 0) setSelectedId(data[0].id);
+    });
+  }, [carrier, fetchDevices]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

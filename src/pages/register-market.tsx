@@ -4,9 +4,11 @@ import PrivateHeader from '../components/PrivateHeader';
 import Footer from '../components/Footer';
 import marketIcon from '../images/market.svg';
 import PostcodeModal from '../components/PostcodeModal';
+import { useStore } from '../hooks/useStore';
 
 export default function RegisterMarket() {
   const navigate = useNavigate();
+  const { verifyBusinessNumber, createStore } = useStore();
   const detailedAddressInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -36,36 +38,14 @@ export default function RegisterMarket() {
       return;
     }
     try {
-      const token = localStorage.getItem('accessToken');
-      const res = await fetch('/api/stores/business-verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ businessRegistrationNumber: formData.businessRegistrationNumber.replace(/-/g, '') })
-      });
-      if (res.ok) {
-        setIsVerified(true);
-        setVerifyStatus('success');
-        setVerifyMessage('사업자등록번호 인증이 완료되었습니다.');
-      } else {
-        const errorData = await res.json();
-        setIsVerified(false);
-        setVerifyStatus('error');
-        if (res.status === 404 || errorData.message?.includes('존재하지 않는')) {
-          setVerifyMessage('존재하지 않는 사업자등록번호입니다.');
-        } else if (errorData.message?.includes('폐업')) {
-          setVerifyMessage('폐업인 사업자등록번호입니다.');
-        } else {
-          setVerifyMessage(errorData.message || '인증에 실패했습니다.');
-        }
-      }
-    } catch (e) {
-      console.error(e);
+      await verifyBusinessNumber(formData.businessRegistrationNumber);
+      setIsVerified(true);
+      setVerifyStatus('success');
+      setVerifyMessage('사업자등록번호 인증이 완료되었습니다.');
+    } catch (e: any) {
       setIsVerified(false);
       setVerifyStatus('error');
-      setVerifyMessage('오류가 발생했습니다.');
+      setVerifyMessage(e.message || '인증에 실패했습니다.');
     }
   };
 
@@ -96,7 +76,6 @@ export default function RegisterMarket() {
     }
 
     try {
-      const token = localStorage.getItem('accessToken');
       const payload = {
         storeBusinessName: formData.storeBusinessName,
         storeName: formData.storeName,
@@ -109,25 +88,11 @@ export default function RegisterMarket() {
         ...(formData.storePhonenumber ? { storePhonenumber: formData.storePhonenumber.replace(/-/g, '') } : {}),
       };
 
-      const res = await fetch('/api/stores', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        alert('매장이 성공적으로 등록되었습니다.');
-        navigate('/my-market');
-      } else {
-        const errData = await res.json();
-        alert(errData.message || '매장 등록에 실패했습니다.');
-      }
-    } catch (e) {
-      console.error(e);
-      alert('오류가 발생했습니다.');
+      await createStore(payload);
+      alert('매장이 성공적으로 등록되었습니다.');
+      navigate('/my-market');
+    } catch (e: any) {
+      alert(e.message || '매장 등록에 실패했습니다.');
     }
   };
 

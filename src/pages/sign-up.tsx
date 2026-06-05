@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PublicHeader from '../components/PublicHeader';
 import Footer from '../components/Footer';
@@ -42,6 +42,9 @@ export default function SignUp() {
   const [agrees, setAgrees] = useState([false, false, false]);
 
   const timer = useTimer(300);
+  const [phoneError, setPhoneError] = useState(false);
+
+  const isValidPhone = (p: string) => /^01[0-9]{9}$/.test(p.replace(/[^0-9]/g, ''));
 
   const toggleAgreeAll = () => {
     const next = !agreeAll;
@@ -62,6 +65,12 @@ export default function SignUp() {
       alert('휴대폰 번호를 입력해주세요.');
       return;
     }
+    if (!isValidPhone(phone)) {
+      setPhoneError(true);
+      return;
+    }
+    setPhoneError(false);
+    
     try {
       await sendVerificationCode(phone.replace(/-/g, ''));
       setIsVerificationVisible(true);
@@ -103,18 +112,24 @@ export default function SignUp() {
             <span className="block text-base font-normal text-text-gray leading-7">매장 대표님이신가요, 직원이신가요?</span>
           </div>
 
-          <div className="role-row">
+          <div className="flex w-full">
             <button
-              className={`role-btn-base ${role === 'owner' ? 'role-btn-active' : 'role-btn-inactive'}`}
               onClick={() => setRole('owner')}
+              className="flex w-[180px] h-14 p-[10px] justify-center items-center gap-[10px] bg-white cursor-pointer outline-none"
+              style={{ border: 'none', borderBottom: role === 'owner' ? '2px solid #1A80FF' : '2px solid transparent' }}
             >
-              매장 대표
+              <span className={`text-base font-semibold ${role === 'owner' ? 'text-[#1A80FF]' : 'text-[#9CA3AF]'}`}>
+                매장 대표
+              </span>
             </button>
             <button
-              className={`role-btn-base ${role === 'staff' ? 'role-btn-active' : 'role-btn-inactive'}`}
               onClick={() => setRole('staff')}
+              className="flex w-[180px] h-14 p-[10px] justify-center items-center gap-[10px] bg-white cursor-pointer outline-none"
+              style={{ border: 'none', borderBottom: role === 'staff' ? '2px solid #1A80FF' : '2px solid transparent' }}
             >
-              매장 직원
+              <span className={`text-base font-semibold ${role === 'staff' ? 'text-[#1A80FF]' : 'text-[#9CA3AF]'}`}>
+                매장 직원
+              </span>
             </button>
           </div>
 
@@ -133,10 +148,14 @@ export default function SignUp() {
 
             <div className="field-group">
               <label className="field-label">휴대폰 번호</label>
+              {/* 1단계: 번호 입력 + 인증 버튼 */}
               <div className="input-wrap">
                 <input
                   type="tel" placeholder="-없이 숫자만 입력해주세요" value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    setPhoneError(false);
+                  }}
                   className={`inner-input ${isPhoneDisabled || isVerified ? 'bg-gray-50 cursor-not-allowed text-text-gray' : ''}`}
                   disabled={isPhoneDisabled || isVerified}
                 />
@@ -149,22 +168,27 @@ export default function SignUp() {
                   {isVerified ? '인증 완료' : (isPhoneDisabled ? '재전송' : '인증')}
                 </button>
               </div>
+              {phoneError && (
+                <span className="text-[13px] text-[#EF4444] leading-6">올바르지 않은 번호 형식이에요</span>
+              )}
               {isVerificationVisible && (
-                <div className="input-wrap mt-2 relative">
-                  <input
-                    type="text" placeholder="인증번호 6자리 입력" value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value)}
-                    className="inner-input pr-16"
-                    maxLength={6}
-                  />
-                  {(timer.isActive || timer.timeLeft === 0) && (
-                    <span className="absolute right-24 text-[13px] font-medium text-red-500">
-                      {timer.formatTime()}
-                    </span>
-                  )}
+                <div className="flex gap-2 mt-2">
+                  <div className="input-wrap flex-1 min-w-0 relative">
+                    <input
+                      type="text" placeholder="인증번호 6자리 입력" value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      className="inner-input pr-16"
+                      maxLength={6}
+                    />
+                    {(timer.isActive || timer.timeLeft === 0) && (
+                      <span className="absolute right-3 text-sm text-primary shrink-0">
+                        {timer.formatTime()}
+                      </span>
+                    )}
+                  </div>
                   <button 
                     type="button" 
-                    className="action-btn shrink-0"
+                    className="w-[100px] h-input shrink-0 text-base font-semibold text-link bg-secondary-bg border-none rounded-lg cursor-pointer hover:bg-secondary-hover"
                     onClick={handleVerifyCode}
                   >
                     확인

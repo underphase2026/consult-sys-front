@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PublicHeader from '../components/PublicHeader';
 import Footer from '../components/Footer';
 import findPasswordImg from '../images/find_password.svg';
+import PhoneVerifyModal from '../components/PhoneVerifyModal';
 
 export default function FindPassword() {
   const navigate = useNavigate();
+  const [phone, setPhone] = useState('');
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
 
   return (
     <div className="app-page">
@@ -25,12 +29,14 @@ export default function FindPassword() {
               <input
                 type="tel"
                 placeholder="-없이 숫자만 입력해주세요"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 className="inner-input"
               />
               <button
                 type="button"
                 className="action-btn"
-                onClick={() => navigate('/complete-find-password')}
+                onClick={() => setShowVerifyModal(true)}
               >
                 인증
               </button>
@@ -39,6 +45,13 @@ export default function FindPassword() {
         </div>
       </main>
       <Footer />
+      {showVerifyModal && (
+        <PhoneVerifyModal
+          phone={phone}
+          onVerified={() => navigate('/complete-find-password')}
+          onClose={() => setShowVerifyModal(false)}
+        />
+      )}
     </div>
   );
 }

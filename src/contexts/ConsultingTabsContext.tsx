@@ -5,6 +5,7 @@ export type ConsultingStep =
   | { name: 'type-select' }
   | { name: 'wireless-carrier' }
   | { name: 'wireless-device'; carrier: string }
+  | { name: 'wireless-consulting'; carrier: string; deviceId: string }
   | { name: 'wired-carrier' };
 
 export interface Tab {
@@ -40,7 +41,7 @@ interface ContextType {
   addTab: () => void;
   removeTab: (id: string) => void;
   setActiveTab: (id: string) => void;
-  navigateStep: (step: ConsultingStep) => void;
+  navigateStep: (step: ConsultingStep, label?: string) => void;
 }
 
 const ConsultingTabsCtx = createContext<ContextType | null>(null);
@@ -89,9 +90,11 @@ export function ConsultingTabsProvider({ children }: { children: ReactNode }) {
   const activeTab = tabs.find(t => t.id === activeTabId) ?? tabs[0];
 
   // Sync URL to activeTab when navigating steps
-  const navigateStep = useCallback((step: ConsultingStep) => {
+  const navigateStep = useCallback((step: ConsultingStep, label?: string) => {
     setTabs(prev =>
-      prev.map(t => (t.id === activeTabId ? { ...t, step } : t))
+      prev.map(t =>
+        t.id === activeTabId ? { ...t, step, ...(label !== undefined ? { label } : {}) } : t
+      )
     );
     navigate(stepToPath(step));
   }, [activeTabId, navigate]);

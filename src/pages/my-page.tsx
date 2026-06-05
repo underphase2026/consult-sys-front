@@ -18,7 +18,7 @@ const MY_PAGE_TABS = [
 type MainTab = typeof MY_PAGE_TABS[number]['key'];
 
 import { useUser, type UserProfileResponseDto } from '../hooks/useUser';
-
+import { useAuth } from '../hooks/useAuth';
 export default function MyPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -76,7 +76,11 @@ function InfoTab() {
   const [birthMonth, setBirthMonth] = useState('');
   const [birthDay, setBirthDay] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  
+  const [showPasswordChangeVerify, setShowPasswordChangeVerify] = useState(false);
+  const [resetToken, setResetToken] = useState<string | null>(null);
+  const { issueResetToken } = useAuth(); // We need to import this
+
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
@@ -116,6 +120,17 @@ function InfoTab() {
       setToast({ type: 'error', message: err.message });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handlePasswordVerified = async () => {
+    setShowPasswordChangeVerify(false);
+    if (!profile?.phoneNumber) return;
+    try {
+      const rt = await issueResetToken(profile.phoneNumber.replace(/-/g, ''));
+      setResetToken(rt);
+    } catch (err: any) {
+      setToast({ type: 'error', message: err.message || '비밀번호 재설정 토큰 발급에 실패했습니다.' });
     }
   };
 
@@ -192,7 +207,7 @@ function InfoTab() {
             disabled
             className="inner-input-gray tracking-[4px]"
           />
-          <button type="button" className="action-btn" onClick={() => setShowPasswordModal(true)}>변경</button>
+          <button type="button" className="action-btn" onClick={() => setShowPasswordChangeVerify(true)}>변경</button>
         </div>
       </div>
 
@@ -267,7 +282,27 @@ function InfoTab() {
       </div>
 
       {showPhoneModal && <PhoneChangeModal onClose={() => setShowPhoneModal(false)} />}
-      {showPasswordModal && <PasswordChangeModal onClose={() => setShowPasswordModal(false)} requireCurrent />}
+      
+      {showPasswordChangeVerify && (
+        <PhoneVerifyModal
+          phone={profile.phoneNumber}
+          startStep="initial"
+          onVerified={handlePasswordVerified}
+          onClose={() => setShowPasswordChangeVerify(false)}
+        />
+      )}
+      
+      {resetToken && (
+        <PasswordChangeModal 
+          resetToken={resetToken} 
+          onClose={() => setResetToken(null)}
+          onSuccess={() => {
+            setResetToken(null);
+            setToast({ type: 'success', message: '비밀번호가 변경되었습니다.' });
+          }}
+        />
+      )}
+      
       {toast && (
         <Toast
           type={toast.type}

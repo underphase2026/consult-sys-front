@@ -60,7 +60,8 @@ export function useAuth() {
         return true;
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.message || '인증번호 발송에 실패했습니다.');
+        const msg = errorData.error?.message || errorData.message;
+        throw new Error(msg || '인증번호 발송에 실패했습니다.');
       }
     } catch (err: any) {
       throw err;
@@ -76,20 +77,99 @@ export function useAuth() {
       });
 
       if (response.ok) {
-        return true;
+        const resData = await response.json();
+        // 백엔드가 { success: true, data: { phoneVerifyToken: ... } } 형식으로 반환한다고 가정
+        return resData.data;
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.message || '인증번호가 일치하지 않습니다.');
+        const msg = errorData.error?.message || errorData.message;
+        throw new Error(msg || '인증번호가 일치하지 않습니다.');
       }
     } catch (err: any) {
       throw err;
     }
   };
 
+  const issueResetToken = async (phoneNumber: string) => {
+    try {
+      const response = await fetch('/api/auth/reset-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber }),
+      });
+
+      if (response.ok) {
+        const resData = await response.json();
+        return resData.data.resetToken; // { success: true, data: { resetToken: '...' } }
+      } else {
+        const errorData = await response.json();
+        const msg = errorData.error?.message || errorData.message;
+        throw new Error(msg || '비밀번호 재설정 토큰 발급에 실패했습니다.');
+      }
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
+  const forgotPassword = async (resetToken: string, newPassword: string) => {
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${resetToken}`,
+        },
+        body: JSON.stringify({ newPassword }),
+      });
+
+      if (response.ok) {
+        return true;
+      } else {
+        const errorData = await response.json();
+        const msg = errorData.error?.message || (Array.isArray(errorData.message) ? errorData.message[0] : errorData.message);
+        throw new Error(msg || '비밀번호 변경에 실패했습니다.');
+      }
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
+  const register = async (role: 'owner' | 'staff', data: any, phoneVerifyToken: string) => {
+    setIsLoading(true);
+    setErrorMsg(null);
+    try {
+      const response = await fetch(`/api/auth/register/${role}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${phoneVerifyToken}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const msg = errorData.error?.message || (Array.isArray(errorData.message) ? errorData.message[0] : errorData.message);
+        throw new Error(msg || '회원가입에 실패했습니다.');
+      }
+
+      const resData = await response.json();
+      return resData;
+    } catch (err: any) {
+      setErrorMsg(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     login,
+    register,
     sendVerificationCode,
     verifyCode,
+    issueResetToken,
+    forgotPassword,
     isLoading,
     errorMsg,
   };

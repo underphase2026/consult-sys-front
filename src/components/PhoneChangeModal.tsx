@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import PhoneVerifyModal from './PhoneVerifyModal';
+import { useAuth } from '../hooks/useAuth';
+import { useUser } from '../hooks/useUser';
 
 interface Props {
   onClose: () => void;
@@ -10,7 +12,11 @@ function PhoneChangeModalContent({ onClose }: Props) {
   const [phone, setPhone] = useState('');
   const [verified, setVerified] = useState(false);
   const [showVerify, setShowVerify] = useState(false);
-  const [error, setError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const { sendVerificationCode, isLoading: isSending } = useAuth();
+  const { updateProfile } = useUser();
 
   useEffect(() => {
     if (showVerify) return;
@@ -19,26 +25,44 @@ function PhoneChangeModalContent({ onClose }: Props) {
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose, showVerify]);
 
-  const handleChange = () => {
+  const handleChange = async () => {
     if (!verified) {
-      setError(true);
+      setErrorMsg('먼저 휴대폰 인증을 완료해주세요.');
       return;
     }
-    onClose();
+    setIsUpdating(true);
+    try {
+      await updateProfile({ phoneNumber: phone.replace(/-/g, '') });
+      alert('휴대폰 번호가 변경되었습니다.');
+      onClose();
+    } catch (err: any) {
+      setErrorMsg(err.message || '휴대폰 번호 변경에 실패했습니다.');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const isValidPhone = (p: string) => /^01[0-9]{9}$/.test(p.replace(/[^0-9]/g, ''));
 
   const handlePhoneInput = (v: string) => {
     setPhone(v);
-    setError(false);
+    setErrorMsg('');
     setVerified(false);
   };
 
-  const handleSendCode = () => {
-    if (!isValidPhone(phone)) { setError(true); return; }
-    setError(false);
-    setShowVerify(true);
+  const handleSendCode = async () => {
+    if (!isValidPhone(phone)) { 
+      setErrorMsg('올바르지 않은 번호 형식이에요'); 
+      return; 
+    }
+    setErrorMsg('');
+    
+    try {
+      await sendVerificationCode(phone.replace(/-/g, ''));
+      setShowVerify(true);
+    } catch (err: any) {
+      setErrorMsg(err.message || '인증번호 발송에 실패했습니다.');
+    }
   };
 
   return (
@@ -55,24 +79,26 @@ function PhoneChangeModalContent({ onClose }: Props) {
 
           <div className="field-group w-full">
             <label className="field-label">변경할 휴대폰 번호</label>
-            <div className={`input-wrap ${error ? 'border-error' : ''}`}>
+            <div className={`input-wrap ${errorMsg ? 'border-error' : ''}`}>
               <input
                 type="tel"
                 placeholder="-없이 숫자만 입력해주세요"
                 value={phone}
                 onChange={(e) => handlePhoneInput(e.target.value)}
                 className="inner-input"
+                disabled={verified}
               />
               <button
                 type="button"
-                className="action-btn"
+                className="action-btn disabled:opacity-50"
                 onClick={handleSendCode}
+                disabled={verified || isSending}
               >
-                {verified ? '인증 완료' : '인증'}
+                {verified ? '인증 완료' : (isSending ? '발송중' : '인증')}
               </button>
             </div>
-            {error && (
-              <span className="text-[13px] text-error leading-6">가입되지 않은 번호예요</span>
+            {errorMsg && (
+              <span className="text-[13px] text-error leading-6">{errorMsg}</span>
             )}
           </div>
 
@@ -86,10 +112,11 @@ function PhoneChangeModalContent({ onClose }: Props) {
             </button>
             <button
               type="button"
-              className="flex-1 h-12 rounded-lg text-base font-semibold text-white bg-primary border-none cursor-pointer hover:bg-primary-hover"
+              className="flex-1 h-12 rounded-lg text-base font-semibold text-white bg-primary border-none cursor-pointer hover:bg-primary-hover disabled:opacity-50"
               onClick={handleChange}
+              disabled={!verified || isUpdating}
             >
-              변경하기
+              {isUpdating ? '변경중...' : '변경하기'}
             </button>
           </div>
         </div>

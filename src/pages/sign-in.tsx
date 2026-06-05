@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PublicHeader from '../components/PublicHeader';
 import Footer from '../components/Footer';
-import PasswordChangeModal from '../components/PasswordChangeModal';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
 import yojeongSymbol from '../images/yojeong_simbol.svg';
 import passwordDots from '../images/password.svg';
 
@@ -14,7 +14,7 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [keepLogin, setKeepLogin] = useState(false);
   const [pwFocused, setPwFocused] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
   const { login, isLoading, errorMsg } = useAuth();
 
@@ -90,7 +90,7 @@ export default function SignIn() {
               </label>
               <span
                 className="text-sm font-medium text-text-gray cursor-pointer leading-6"
-                onClick={() => setShowPasswordModal(true)}
+                onClick={() => setShowForgotPasswordModal(true)}
               >
                 비밀번호를 잊으셨나요?
               </span>
@@ -124,10 +124,9 @@ export default function SignIn() {
         </div>
       </main>
       <Footer />
-      {showPasswordModal && (
-        <PasswordChangeModal
-          onClose={() => setShowPasswordModal(false)}
-          requireCurrent={false}
+      {showForgotPasswordModal && (
+        <ForgotPasswordModal
+          onClose={() => setShowForgotPasswordModal(false)}
         />
       )}
     </div>

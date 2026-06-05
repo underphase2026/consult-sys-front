@@ -153,7 +153,6 @@ export default function RegisterMarket() {
                     placeholder="-없이 숫자만 입력해 주세요"
                     className="inner-input"
                     required
-                    readOnly={isVerified}
                   />
                   <button
                     type="button"

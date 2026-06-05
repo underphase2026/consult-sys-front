@@ -43,6 +43,7 @@ export default function SignUp() {
 
   const timer = useTimer(300);
   const [phoneError, setPhoneError] = useState(false);
+  const [phoneVerifyToken, setPhoneVerifyToken] = useState<string | null>(null);
 
   const isValidPhone = (p: string) => /^01[0-9]{9}$/.test(p.replace(/[^0-9]/g, ''));
 
@@ -58,7 +59,7 @@ export default function SignUp() {
     setAgreeAll(next.every(Boolean));
   };
 
-  const { sendVerificationCode, verifyCode } = useAuth();
+  const { sendVerificationCode, verifyCode, register, isLoading } = useAuth();
 
   const handleSendVerificationCode = async () => {
     if (!phone) {
@@ -89,12 +90,43 @@ export default function SignUp() {
       return;
     }
     try {
-      await verifyCode(phone.replace(/-/g, ''), verificationCode);
+      const data = await verifyCode(phone.replace(/-/g, ''), verificationCode);
+      setPhoneVerifyToken(data?.phoneVerifyToken);
       timer.stop();
       setIsVerificationVisible(false);
       setIsVerified(true);
     } catch (error: any) {
       alert(error.message || '오류가 발생했습니다.');
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!name) return alert('이름을 입력해주세요.');
+    if (!isVerified || !phoneVerifyToken) return alert('휴대폰 인증을 완료해주세요.');
+    if (!password || password.length < 8) return alert('비밀번호는 최소 8자 이상이어야 합니다.');
+    if (password !== passwordConfirm) return alert('비밀번호가 일치하지 않습니다.');
+    if (!agrees[0] || !agrees[1]) return alert('필수 약관에 동의해주세요.');
+
+    const payload = {
+      name,
+      phoneNumber: phone.replace(/-/g, ''),
+      email: email || undefined,
+      password,
+      terms: {
+        serviceAgreed: agrees[0],
+        privacyAgreed: agrees[1],
+        marketingAgreed: agrees[2],
+      },
+    };
+
+    try {
+      await register(role, payload, phoneVerifyToken);
+      alert('회원가입이 완료되었습니다.');
+      navigate('/complete-sign-up');
+    } catch (error: any) {
+      alert(error.message || '회원가입에 실패했습니다.');
     }
   };
 
@@ -135,7 +167,7 @@ export default function SignUp() {
 
           <form
             className="w-full flex flex-col"
-            onSubmit={(e) => { e.preventDefault(); navigate('/complete-sign-up'); }}
+            onSubmit={handleRegister}
           >
             <div className="field-group">
               <label className="field-label">이름</label>
@@ -251,7 +283,9 @@ export default function SignUp() {
             ))}
 
             <div className="submit-wrap pb-5">
-              <button type="submit" className="btn-primary">가입 완료</button>
+              <button type="submit" className="btn-primary disabled:opacity-50" disabled={isLoading}>
+                {isLoading ? '가입 중...' : '가입 완료'}
+              </button>
             </div>
           </form>
         </div>

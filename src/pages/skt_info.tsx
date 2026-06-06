@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import { useConsulting, getCachedDevices, type DeviceData } from '../hooks/useConsulting';
+import { ConsultingStep } from '../contexts/ConsultingTabsContext';
 import Iphone17eImg from '../images/Iphone17e.svg';
 import BadgeApplePay   from '../images/badge-applepay.svg';
 import BadgeFaceId     from '../images/badge-faceid.svg';

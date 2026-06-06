@@ -22,7 +22,7 @@ const BRAND_FILTERS = [
   { key: 'other',   label: '기타' },
 ] as const;
 
-import { useConsulting, type DeviceData as Device } from '../hooks/useConsulting';
+import { useConsulting, getCachedDevices, type DeviceData as Device } from '../hooks/useConsulting';
 
 type BrandFilter = typeof BRAND_FILTERS[number]['key'];
 
@@ -70,12 +70,12 @@ export default function ConsultingStepContent() {
   const { step } = activeTab;
 
   switch (step.name) {
-    case 'type-select':      return <TypeSelectStep navigate={navigateStep} />;
-    case 'wireless-carrier': return <WirelessCarrierStep navigate={navigateStep} />;
-    case 'wireless-device':      return <WirelessDeviceStep carrier={step.carrier} navigate={navigateStep} />;
-    case 'wireless-consulting':  return <PaymentInfo carrier={step.carrier} deviceId={step.deviceId} navigate={navigateStep} />;
-    case 'wired-carrier':        return <WiredCarrierStep />;
-    default:                 return null;
+    case 'type-select':          return <TypeSelectStep key={activeTab.id} navigate={navigateStep} />;
+    case 'wireless-carrier':     return <WirelessCarrierStep key={activeTab.id} navigate={navigateStep} />;
+    case 'wireless-device':      return <WirelessDeviceStep key={activeTab.id} carrier={step.carrier} navigate={navigateStep} />;
+    case 'wireless-consulting':  return <PaymentInfo key={activeTab.id} carrier={step.carrier} deviceId={step.deviceId} navigate={navigateStep} />;
+    case 'wired-carrier':        return <WiredCarrierStep key={activeTab.id} />;
+    default:                     return null;
   }
 }
 
@@ -131,8 +131,10 @@ const PLACEHOLDER_IDS = Array.from({ length: 14 }, (_, i) => `ph-${i}`);
 
 function WirelessDeviceStep({ carrier, navigate }: { carrier: string; navigate: (s: ConsultingStep, label?: string) => void }) {
   const [brandFilter, setBrandFilter] = useState<BrandFilter>('all');
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [devices, setDevices] = useState<Device[]>(() => {
+    return getCachedDevices(carrier) || [];
+  });
+  const [selectedId, setSelectedId] = useState<string | null>(devices[0]?.id || null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const searchRef = useRef<HTMLInputElement>(null);
   const [deviceTypeOpen, setDeviceTypeOpen] = useState(false);
@@ -143,11 +145,13 @@ function WirelessDeviceStep({ carrier, navigate }: { carrier: string; navigate: 
   const { fetchDevices, isLoading } = useConsulting();
 
   useEffect(() => {
-    fetchDevices(carrier).then(data => {
-      setDevices(data);
-      if (data.length > 0) setSelectedId(data[0].id);
-    });
-  }, [carrier, fetchDevices]);
+    if (devices.length === 0) {
+      fetchDevices(carrier).then(data => {
+        setDevices(data);
+        if (data.length > 0) setSelectedId(data[0].id);
+      });
+    }
+  }, [carrier, fetchDevices, devices.length]);
 
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -352,8 +356,9 @@ const CARRIER_LABELS: Record<string, string> = { skt: 'SKT', kt: 'KT', lgu: 'LG 
 function DetailPanel({ device, carrier, navigate }: {
   device: Device;
   carrier: string;
-  navigate: (s: ConsultingStep, label?: string) => void;
+  navigate: (s: ConsultingStep, label?: string, quoteId?: string) => void;
 }) {
+  const { createTempQuote } = useConsulting();
   const [colorIdx, setColorIdx] = useState(0);
   const [colorOpen, setColorOpen] = useState(false);
   const colorRef = useRef<HTMLDivElement>(null);
@@ -431,10 +436,14 @@ function DetailPanel({ device, carrier, navigate }: {
         </div>
         <button
           className="w-full h-[52px] flex items-center justify-center px-3 bg-primary text-white text-base font-medium rounded-lg border-none cursor-pointer"
-          onClick={() => navigate(
-            { name: 'wireless-consulting', carrier, deviceId: device.id },
-            `${CARRIER_LABELS[carrier] ?? carrier.toUpperCase()}_${device.name} ${device.specs.storage}`
-          )}
+          onClick={async () => {
+            const tempQuote = await createTempQuote('WIRELESS', carrier, device.id, device.name);
+            navigate(
+              { name: 'wireless-consulting', carrier, deviceId: device.id },
+              `${carrier.toUpperCase()}_${device.name}`,
+              tempQuote?.id
+            );
+          }}
         >
           상담 진행
         </button>

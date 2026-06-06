@@ -39,6 +39,11 @@ export function useAuth() {
         sessionStorage.setItem('accessToken', resData.data.accessToken);
         localStorage.removeItem('accessToken');
       }
+      
+      // Clear temporary consulting tabs so they don't leak between accounts
+      sessionStorage.removeItem('consulting-tabs');
+      sessionStorage.removeItem('consulting-active-tab-id');
+      
       return true;
     } catch (err: any) {
       setErrorMsg(err.message);

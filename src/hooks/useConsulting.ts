@@ -13,10 +13,21 @@ export interface DeviceData {
   featured?: boolean;
 }
 
+const deviceCache: Record<string, DeviceData[]> = {};
+
+export function getCachedDevices(carrier: string, networkType: string = 'WIRELESS'): DeviceData[] | null {
+  return deviceCache[`${networkType}_${carrier.toUpperCase()}`] || null;
+}
+
 export function useConsulting() {
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchDevices = useCallback(async (carrier: string, networkType: string = 'WIRELESS') => {
+    const cacheKey = `${networkType}_${carrier.toUpperCase()}`;
+    if (deviceCache[cacheKey]) {
+      return deviceCache[cacheKey];
+    }
+
     setIsLoading(true);
     try {
       const token = (localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken'));
@@ -60,6 +71,7 @@ export function useConsulting() {
           featured: idx < 2
         };
       });
+      deviceCache[cacheKey] = mapped;
       return mapped;
     } catch (e) {
       console.error(e);
@@ -69,8 +81,30 @@ export function useConsulting() {
     }
   }, []);
 
+  const createTempQuote = useCallback(async (networkType: string, carrierId: string, deviceId: string, deviceName: string) => {
+    const token = (localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken'));
+    if (!token) return null;
+    try {
+      const res = await fetch('/api/api/consultations/temp-quotes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ networkType: networkType.toUpperCase(), carrierId: carrierId.toUpperCase(), deviceId, deviceName })
+      });
+      if (!res.ok) throw new Error('임시 견적 생성에 실패했습니다.');
+      const json = await res.json();
+      return json.data; // Returns TempQuote entity
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  }, []);
+
   return {
     isLoading,
     fetchDevices,
+    createTempQuote,
   };
 }

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import yojeongLogo from '../images/yojeong_Logo2.png';
+import yojeongLogo from '../images/logos/yojeong_Logo2.png';
 
 export default function PublicHeader() {
   const navigate = useNavigate();

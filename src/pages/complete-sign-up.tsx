@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PublicHeader from '../components/PublicHeader';
 import Footer from '../components/Footer';
-import completeSignUpImg from '../images/complete_sign_up.svg';
+import completeSignUpImg from '../images/illustrations/complete_sign_up.svg';
 
 type ReferralStatus = 'idle' | 'verified' | 'error';
 

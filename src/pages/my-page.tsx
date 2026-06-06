@@ -7,8 +7,8 @@ import PasswordChangeModal from '../components/PasswordChangeModal';
 import PaymentDetailModal, { type PaymentDetail } from '../components/PaymentDetailModal';
 import CardConfirmModal from '../components/CardConfirmModal';
 import Toast from '../components/Toast';
-import personalImg from '../images/personal.svg';
-import personalHoverImg from '../images/personal2.svg';
+import personalImg from '../images/icons/personal.svg';
+import personalHoverImg from '../images/icons/personal2.svg';
 
 const MY_PAGE_TABS = [
   { key: 'info', label: '정보수정' },

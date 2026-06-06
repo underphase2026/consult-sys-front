@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect, ReactNode, Fragment } from 'react';
 import { useConsulting, getCachedDevices, type DeviceData } from '../hooks/useConsulting';
 import { ConsultingStep } from '../contexts/ConsultingTabsContext';
-import Iphone17eImg from '../images/Iphone17e.svg';
-import BadgeApplePay   from '../images/badge-applepay.svg';
-import BadgeFaceId     from '../images/badge-faceid.svg';
-import BadgeWaterproof from '../images/badge-waterproof.svg';
-import WiredChargeIcon from '../images/wired_charge.svg';
-import UsimIcon        from '../images/usim.svg';
+import Iphone17eImg from '../images/devices/Iphone17e.svg';
+import BadgeApplePay   from '../images/badges/badge-applepay.svg';
+import BadgeFaceId     from '../images/badges/badge-faceid.svg';
+import BadgeWaterproof from '../images/badges/badge-waterproof.svg';
+import WiredChargeIcon from '../images/badges/wired_charge.svg';
+import UsimIcon        from '../images/badges/usim.svg';
 
 const CARRIER_LABELS: Record<string, string> = { skt: 'SKT', kt: 'KT', lgu: 'LG U+' };
 

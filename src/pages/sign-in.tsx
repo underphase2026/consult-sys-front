@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import PublicHeader from '../components/PublicHeader';
 import Footer from '../components/Footer';
 import ForgotPasswordModal from '../components/ForgotPasswordModal';
-import yojeongSymbol from '../images/yojeong_simbol.svg';
-import passwordDots from '../images/password.svg';
+import yojeongSymbol from '../images/logos/yojeong_simbol.svg';
+import passwordDots from '../images/icons/password.svg';
 
 import { useAuth } from '../hooks/useAuth';
 

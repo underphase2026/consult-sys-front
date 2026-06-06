@@ -45,11 +45,14 @@ export function useConsulting() {
         if (nameLower.includes('galaxy') || nameLower.includes('갤럭시')) brand = 'Samsung';
         else if (nameLower.includes('iphone') || nameLower.includes('아이폰')) brand = 'Apple';
         
+        const storageRaw = d.specs?.storage || '256GB / 512GB';
+        const storageCapacity = storageRaw.split('/')[0].trim();
+
         return {
           id: String(d.id),
           brand,
-          name: d.deviceName,
-          model: d.modelName || '',
+          name: `${d.deviceName} ${storageCapacity}`,
+          model: d.modelName ? `${d.modelName} ${storageCapacity}` : storageCapacity,
           price: `${(d.retailPrice || 0).toLocaleString()}원`,
           support: `${(d.publicSubsidy || 0).toLocaleString()}원`,
           remaining: `${(d.principal || 0).toLocaleString()}원`,
@@ -61,7 +64,7 @@ export function useConsulting() {
           specs: {
             cpu: d.specs?.cpu || '-',
             ram: d.specs?.ram || '-',
-            storage: d.specs?.storage || '256GB / 512GB',
+            storage: storageRaw,
             display: d.specs?.display || '-',
             camera: d.specs?.camera || '-',
             battery: d.specs?.battery || '-',

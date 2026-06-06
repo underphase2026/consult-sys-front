@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import PublicHeader from '../components/PublicHeader';
 import Footer from '../components/Footer';
-import signUpImg from '../images/sign-up.svg';
+import signUpImg from '../images/icons/sign-up.svg';
 import { useAuth } from '../hooks/useAuth';
 import { usePhoneAuth } from '../hooks/usePhoneAuth';
 import TimerDisplay from '../components/TimerDisplay';

@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PrivateHeader from '../components/PrivateHeader';
 import Footer from '../components/Footer';
-import marketIcon from '../images/market.svg';
+import marketIcon from '../images/icons/market.svg';
 import PostcodeModal from '../components/PostcodeModal';
 import { useStore } from '../hooks/useStore';
 

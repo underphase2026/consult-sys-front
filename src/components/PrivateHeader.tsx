@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import yojeongLogo from '../images/yojeong_Logo2.png';
-import personalImg from '../images/personal.svg';
+import yojeongLogo from '../images/logos/yojeong_Logo2.png';
+import personalImg from '../images/icons/personal.svg';
 
 interface PrivateHeaderProps {
   activePage?: 'my-market' | 'my-page';

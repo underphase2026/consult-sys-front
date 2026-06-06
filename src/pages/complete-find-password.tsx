@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import PublicHeader from '../components/PublicHeader';
 import Footer from '../components/Footer';
-import completePasswordImg from '../images/complete_password.svg';
+import completePasswordImg from '../images/illustrations/complete_password.svg';
 
 export default function CompleteFindPassword() {
   const navigate = useNavigate();

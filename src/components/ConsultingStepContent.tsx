@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import PaymentInfo from '../pages/skt_info';
 import { useConsultingTabs, ConsultingStep } from '../contexts/ConsultingTabsContext';
-import SKT from '../images/SKT.svg';
-import KT from '../images/KT.svg';
-import UPlus from '../images/U+.svg';
-import WirelessIcon from '../images/whireless.svg';
-import WiredIcon from '../images/wired.svg';
-import Iphone17eImg from '../images/Iphone17e.svg';
-import SearchImg from '../images/search.svg';
+import SKT from '../images/carriers/SKT.svg';
+import KT from '../images/carriers/KT.svg';
+import UPlus from '../images/carriers/U+.svg';
+import WirelessIcon from '../images/icons/whireless.svg';
+import WiredIcon from '../images/icons/wired.svg';
+import Iphone17eImg from '../images/devices/Iphone17e.svg';
+import SearchImg from '../images/icons/search.svg';
 
 const CARRIERS = [
   { key: 'skt', label: 'SKT', logo: SKT },

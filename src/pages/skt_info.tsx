@@ -70,7 +70,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
   // 변경 가능일자: 오늘로부터 6개월 뒤
   const changeableDateStr = (() => {
     const d = new Date();
-    d.setMonth(d.getMonth() + 6);
+    d.setDate(d.getDate() + 183);
     return d.toISOString().split('T')[0];
   })();
 
@@ -283,7 +283,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
             {/* Frame 742: HORIZONTAL SPACE_BETWEEN gap=24 — 두 컬럼 */}
             <div className="flex justify-between gap-6 self-stretch">
               {/* Frame 740: VERTICAL MAX gap=16 — 공통지원금 컬럼 */}
-              <div className="flex-1 min-w-0 flex flex-col gap-4">
+              <div className={`flex-1 min-w-0 flex flex-col gap-4 transition-all ${planTab !== '공통지원금' ? 'blur-sm pointer-events-none' : ''}`}>
                 <div className="flex items-center gap-2 h-11 min-w-0">
                   <span className="w-[88px] shrink-0 text-[14px] text-[#6B7280]">가입유형</span>
                   <Dropdown value={가입유형} options={['신규가입', '기기변경', '번호이동']} onChange={set가입유형} disabled={planTab !== '공통지원금'} />
@@ -305,7 +305,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                 </div>
               </div>
               {/* Frame 741: VERTICAL MAX gap=16 — 선택약정할인 컬럼 */}
-              <div className="flex-1 min-w-0 flex flex-col gap-4">
+              <div className={`flex-1 min-w-0 flex flex-col gap-4 transition-all ${planTab !== '선택약정할인' ? 'blur-sm pointer-events-none' : ''}`}>
                 <div className="flex items-center gap-2 h-11 min-w-0">
                   <span className="w-[88px] shrink-0 text-[14px] text-[#6B7280]">가입유형</span>
                   <Dropdown value={가입유형} options={['신규가입', '기기변경', '번호이동']} onChange={set가입유형} disabled={planTab !== '선택약정할인'} />

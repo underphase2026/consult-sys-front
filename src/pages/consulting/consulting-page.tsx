@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import ConsultingLayout from '../components/ConsultingLayout';
+import ConsultingLayout from '../../components/ConsultingLayout';
 
 export default function ConsultingPage() {
   const navigate = useNavigate();

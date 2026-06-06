@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import ConsultingLayout from '../components/ConsultingLayout';
-import SKT from '../images/SKT.svg';
-import KT from '../images/KT.svg';
-import UPlus from '../images/U+.svg';
+import ConsultingLayout from '../../components/ConsultingLayout';
+import SKT from '../../images/carriers/SKT.svg';
+import KT from '../../images/carriers/KT.svg';
+import UPlus from '../../images/carriers/U+.svg';
 
 const CARRIERS = [
   { key: 'skt', label: 'SKT', logo: SKT },

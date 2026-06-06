@@ -1,18 +1,48 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useAuth } from '../hooks/useAuth';
 
 interface Props {
   onClose: () => void;
-  /** true: 마이페이지(현재 비밀번호 포함) / false: 로그인 찾기(새 비밀번호만) */
-  requireCurrent?: boolean;
+  resetToken: string;
+  onSuccess?: () => void;
 }
 
-function PasswordChangeModalContent({ onClose, requireCurrent = true }: Props) {
+function PasswordChangeModalContent({ onClose, resetToken, onSuccess }: Props) {
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const { forgotPassword } = useAuth();
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  const handleSubmit = async () => {
+    if (!newPassword || newPassword.length < 8) {
+      setErrorMsg('비밀번호는 영문, 숫자 포함 8~20자여야 합니다.');
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      setErrorMsg('비밀번호가 일치하지 않습니다.');
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await forgotPassword(resetToken, newPassword);
+      if (onSuccess) onSuccess();
+      else onClose();
+    } catch (err: any) {
+      setErrorMsg(err.message || '비밀번호 변경에 실패했습니다.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   return (
     <div
@@ -25,17 +55,23 @@ function PasswordChangeModalContent({ onClose, requireCurrent = true }: Props) {
       >
         <h2 className="text-xl font-semibold text-text-dark leading-8">새 비밀번호를 입력해 주세요</h2>
 
-        {requireCurrent && (
-          <div className="field-group w-full">
-            <label className="field-label">현재 비밀번호</label>
-            <input type="password" placeholder="영문, 숫자 포함 8~20자" className="form-input" />
-          </div>
-        )}
-
-        <div className="field-group w-full">
+        <div className="field-group w-full mt-2">
           <label className="field-label">새 비밀번호</label>
-          <input type="password" placeholder="영문, 숫자 포함 8~20자" className="form-input" />
-          <input type="password" placeholder="비밀번호를 한 번 더 입력해 주세요" className="form-input" />
+          <input 
+            type="password" 
+            placeholder="영문, 숫자 포함 8~20자" 
+            className="form-input mb-2" 
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+          <input 
+            type="password" 
+            placeholder="비밀번호를 한 번 더 입력해 주세요" 
+            className="form-input" 
+            value={newPasswordConfirm}
+            onChange={(e) => setNewPasswordConfirm(e.target.value)}
+          />
+          {errorMsg && <span className="text-[13px] text-error leading-6">{errorMsg}</span>}
         </div>
 
         <div className="pt-5 flex gap-2">
@@ -48,9 +84,11 @@ function PasswordChangeModalContent({ onClose, requireCurrent = true }: Props) {
           </button>
           <button
             type="button"
-            className="flex-1 h-12 rounded-lg text-base font-semibold text-white bg-primary border-none cursor-pointer hover:bg-primary-hover"
+            className="flex-1 h-12 rounded-lg text-base font-semibold text-white bg-primary border-none cursor-pointer hover:bg-primary-hover disabled:opacity-50"
+            onClick={handleSubmit}
+            disabled={isUpdating}
           >
-            비밀번호 변경
+            {isUpdating ? '변경중...' : '비밀번호 변경'}
           </button>
         </div>
       </div>

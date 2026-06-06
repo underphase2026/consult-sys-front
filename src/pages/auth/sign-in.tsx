@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PublicHeader from '../components/PublicHeader';
-import Footer from '../components/Footer';
-import PasswordChangeModal from '../components/PasswordChangeModal';
-import yojeongSymbol from '../images/yojeong_simbol.svg';
-import passwordDots from '../images/password.svg';
+import PublicHeader from '../../components/PublicHeader';
+import Footer from '../../components/Footer';
+import ForgotPasswordModal from '../../components/ForgotPasswordModal';
+import yojeongSymbol from '../../images/logos/yojeong_simbol.svg';
+import passwordDots from '../../images/icons/password.svg';
+
+import { useAuth } from '../../hooks/useAuth';
 
 export default function SignIn() {
   const navigate = useNavigate();
@@ -12,7 +14,19 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [keepLogin, setKeepLogin] = useState(false);
   const [pwFocused, setPwFocused] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+
+  const { login, isLoading, errorMsg } = useAuth();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await login(phone, password, keepLogin);
+      navigate('/my-market');
+    } catch (err) {
+      // errorMsg is handled by useAuth
+    }
+  };
 
   return (
     <div className="app-page">
@@ -29,7 +43,7 @@ export default function SignIn() {
 
           <form
             className="w-full flex flex-col"
-            onSubmit={(e) => { e.preventDefault(); navigate('/my-market'); }}
+            onSubmit={handleLogin}
           >
             <div className="field-group">
               <label className="field-label">휴대폰 번호</label>
@@ -76,14 +90,25 @@ export default function SignIn() {
               </label>
               <span
                 className="text-sm font-medium text-text-gray cursor-pointer leading-6"
-                onClick={() => setShowPasswordModal(true)}
+                onClick={() => setShowForgotPasswordModal(true)}
               >
                 비밀번호를 잊으셨나요?
               </span>
             </div>
 
             <div className="submit-wrap">
-              <button type="submit" className="btn-primary">로그인</button>
+              {errorMsg && (
+                <div className="mb-3 text-red-500 text-sm font-medium text-center">
+                  {errorMsg}
+                </div>
+              )}
+              <button 
+                type="submit" 
+                className="btn-primary disabled:opacity-50"
+                disabled={isLoading}
+              >
+                {isLoading ? '로그인 중...' : '로그인'}
+              </button>
             </div>
           </form>
 
@@ -99,10 +124,9 @@ export default function SignIn() {
         </div>
       </main>
       <Footer />
-      {showPasswordModal && (
-        <PasswordChangeModal
-          onClose={() => setShowPasswordModal(false)}
-          requireCurrent={false}
+      {showForgotPasswordModal && (
+        <ForgotPasswordModal
+          onClose={() => setShowForgotPasswordModal(false)}
         />
       )}
     </div>

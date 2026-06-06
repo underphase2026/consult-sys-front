@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import PaymentInfo from '../pages/skt_info';
+import PaymentInfo from '../pages/consulting/skt_info';
 import { useConsultingTabs, ConsultingStep } from '../contexts/ConsultingTabsContext';
-import SKT from '../images/SKT.svg';
-import KT from '../images/KT.svg';
-import UPlus from '../images/U+.svg';
-import WirelessIcon from '../images/whireless.svg';
-import WiredIcon from '../images/wired.svg';
-import Iphone17eImg from '../images/Iphone17e.svg';
-import SearchImg from '../images/search.svg';
+import SKT from '../images/carriers/SKT.svg';
+import KT from '../images/carriers/KT.svg';
+import UPlus from '../images/carriers/U+.svg';
+import WirelessIcon from '../images/icons/whireless.svg';
+import WiredIcon from '../images/icons/wired.svg';
+import Iphone17eImg from '../images/devices/Iphone17e.svg';
+import SearchImg from '../images/icons/search.svg';
 
 const CARRIERS = [
   { key: 'skt', label: 'SKT', logo: SKT },
@@ -22,21 +22,9 @@ const BRAND_FILTERS = [
   { key: 'other',   label: '기타' },
 ] as const;
 
+import { useConsulting, getCachedDevices, type DeviceData as Device } from '../hooks/useConsulting';
+
 type BrandFilter = typeof BRAND_FILTERS[number]['key'];
-
-type DeviceColor = { name: string; hex: string };
-
-type Device = {
-  id: string;
-  brand: string;
-  name: string;
-  model: string;
-  price: string;
-  support: string;
-  remaining: string;
-  colors: DeviceColor[];
-  specs: Record<string, string>;
-};
 
 const DEVICE_IMAGES: Record<string, string> = {
   'iphone-17e': Iphone17eImg,
@@ -82,12 +70,12 @@ export default function ConsultingStepContent() {
   const { step } = activeTab;
 
   switch (step.name) {
-    case 'type-select':      return <TypeSelectStep navigate={navigateStep} />;
-    case 'wireless-carrier': return <WirelessCarrierStep navigate={navigateStep} />;
-    case 'wireless-device':      return <WirelessDeviceStep carrier={step.carrier} navigate={navigateStep} />;
-    case 'wireless-consulting':  return <PaymentInfo carrier={step.carrier} deviceId={step.deviceId} navigate={navigateStep} />;
-    case 'wired-carrier':        return <WiredCarrierStep />;
-    default:                 return null;
+    case 'type-select':          return <TypeSelectStep key={activeTab.id} navigate={navigateStep} />;
+    case 'wireless-carrier':     return <WirelessCarrierStep key={activeTab.id} navigate={navigateStep} />;
+    case 'wireless-device':      return <WirelessDeviceStep key={activeTab.id} carrier={step.carrier} navigate={navigateStep} />;
+    case 'wireless-consulting':  return <PaymentInfo key={activeTab.id} carrier={step.carrier} deviceId={step.deviceId} navigate={navigateStep} />;
+    case 'wired-carrier':        return <WiredCarrierStep key={activeTab.id} />;
+    default:                     return null;
   }
 }
 
@@ -143,13 +131,27 @@ const PLACEHOLDER_IDS = Array.from({ length: 14 }, (_, i) => `ph-${i}`);
 
 function WirelessDeviceStep({ carrier, navigate }: { carrier: string; navigate: (s: ConsultingStep, label?: string) => void }) {
   const [brandFilter, setBrandFilter] = useState<BrandFilter>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedId, setSelectedId] = useState(DEVICES[0].id);
+  const [devices, setDevices] = useState<Device[]>(() => {
+    return getCachedDevices(carrier) || [];
+  });
+  const [selectedId, setSelectedId] = useState<string | null>(devices[0]?.id || null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const searchRef = useRef<HTMLInputElement>(null);
   const [deviceTypeOpen, setDeviceTypeOpen] = useState(false);
   const [selectedDeviceType, setSelectedDeviceType] = useState('단말기 유형');
+  const [searchQuery, setSearchQuery] = useState('');
   const deviceTypeRef = useRef<HTMLDivElement>(null);
+  
+  const { fetchDevices, isLoading } = useConsulting();
+
+  useEffect(() => {
+    if (devices.length === 0) {
+      fetchDevices(carrier).then(data => {
+        setDevices(data);
+        if (data.length > 0) setSelectedId(data[0].id);
+      });
+    }
+  }, [carrier, fetchDevices, devices.length]);
 
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -170,7 +172,7 @@ function WirelessDeviceStep({ carrier, navigate }: { carrier: string; navigate: 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filtered = DEVICES.filter(d => {
+  const filtered = devices.filter(d => {
     const matchesBrand =
       brandFilter === 'all' ||
       (brandFilter === 'samsung' && d.brand === 'Samsung') ||
@@ -186,12 +188,15 @@ function WirelessDeviceStep({ carrier, navigate }: { carrier: string; navigate: 
     ...filtered.filter(d => favorites.has(d.id)),
     ...filtered.filter(d => !favorites.has(d.id)),
   ];
+  
+  const placeholdersToRender = Math.max(0, 14 - filtered.length);
+  const currentPlaceholderIds = PLACEHOLDER_IDS.slice(0, placeholdersToRender);
   const sortedPlaceholders = [
-    ...PLACEHOLDER_IDS.filter(id => favorites.has(id)),
-    ...PLACEHOLDER_IDS.filter(id => !favorites.has(id)),
+    ...currentPlaceholderIds.filter(id => favorites.has(id)),
+    ...currentPlaceholderIds.filter(id => !favorites.has(id)),
   ];
 
-  const selected = DEVICES.find(d => d.id === selectedId) ?? DEVICES[0];
+  const selected = devices.find(d => d.id === selectedId) ?? devices[0];
 
   return (
     <div className="pt-[60px] pb-[60px] flex flex-col items-center">
@@ -258,7 +263,6 @@ function WirelessDeviceStep({ carrier, navigate }: { carrier: string; navigate: 
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 bg-transparent border-none outline-none text-sm text-[#111827] placeholder:text-[#9CA3AF]"
               />
-              {/* Frame 643 */}
               <button
                 type="button"
                 className="w-6 h-6 flex justify-center items-center shrink-0 border-none bg-transparent cursor-pointer"
@@ -295,43 +299,51 @@ function WirelessDeviceStep({ carrier, navigate }: { carrier: string; navigate: 
 
             {/* 바디 */}
             <div className="flex-1 overflow-y-auto">
-              {sortedDevices.map(device => (
-                <div
-                  key={device.id}
-                  onClick={() => setSelectedId(device.id)}
-                  className={`flex justify-between items-center h-16 py-4 px-5 shrink-0 self-stretch cursor-pointer border-b border-input-border text-base
-                    ${selectedId === device.id ? 'bg-[#E8F2FF]' : 'bg-white'}`}
-                >
-                  <span className="w-[156px] shrink-0 font-medium text-text-dark truncate">{device.name}</span>
-                  <span className="w-[124px] shrink-0 font-medium text-text-gray truncate">{device.model}</span>
-                  <span className="w-[92px] shrink-0 font-medium text-text-gray text-right">{device.price}</span>
-                  <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">{device.support}</span>
-                  <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">{device.remaining}</span>
-                  <span className="w-6 h-6 flex flex-col justify-center items-center shrink-0">
-                    <StarIcon favorited={favorites.has(device.id)} onClick={(e) => toggleFavorite(device.id, e)} />
-                  </span>
-                </div>
-              ))}
-              {sortedPlaceholders.map(phId => (
-                <div
-                  key={phId}
-                  className="flex justify-between items-center h-16 py-4 px-5 shrink-0 self-stretch bg-white border-b border-input-border last:border-b-0 text-base"
-                >
-                  <span className="w-[156px] shrink-0 font-medium text-text-dark">기기명</span>
-                  <span className="w-[124px] shrink-0 font-medium text-text-gray">모델명</span>
-                  <span className="w-[92px] shrink-0 font-medium text-text-gray text-right">1,254,000원</span>
-                  <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">700,000원</span>
-                  <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">554,000원</span>
-                  <span className="w-6 h-6 flex flex-col justify-center items-center shrink-0">
-                    <StarIcon favorited={favorites.has(phId)} onClick={(e) => toggleFavorite(phId, e)} />
-                  </span>
-                </div>
-              ))}
+              {isLoading ? (
+                <div className="py-20 text-center text-text-gray">기종 목록을 불러오는 중...</div>
+              ) : filtered.length === 0 ? (
+                <div className="py-20 text-center text-text-gray">조회된 기기가 없습니다.</div>
+              ) : (
+                <>
+                  {sortedDevices.map(device => (
+                    <div
+                      key={device.id}
+                      onClick={() => setSelectedId(device.id)}
+                      className={`flex justify-between items-center h-16 py-4 px-5 shrink-0 self-stretch cursor-pointer border-b border-input-border text-base
+                        ${selectedId === device.id ? 'bg-[#E8F2FF]' : 'bg-white'}`}
+                    >
+                      <span className="w-[156px] shrink-0 font-medium text-text-dark truncate">{device.name}</span>
+                      <span className="w-[124px] shrink-0 font-medium text-text-gray truncate">{device.model}</span>
+                      <span className="w-[92px] shrink-0 font-medium text-text-gray text-right">{device.price}</span>
+                      <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">{device.support}</span>
+                      <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">{device.remaining}</span>
+                      <span className="w-6 h-6 flex flex-col justify-center items-center shrink-0">
+                        <StarIcon favorited={favorites.has(device.id)} onClick={(e) => toggleFavorite(device.id, e)} />
+                      </span>
+                    </div>
+                  ))}
+                  {sortedPlaceholders.map(phId => (
+                    <div
+                      key={phId}
+                      className="flex justify-between items-center h-16 py-4 px-5 shrink-0 self-stretch bg-white border-b border-input-border last:border-b-0 text-base"
+                    >
+                      <span className="w-[156px] shrink-0 font-medium text-text-dark">기기명</span>
+                      <span className="w-[124px] shrink-0 font-medium text-text-gray">모델명</span>
+                      <span className="w-[92px] shrink-0 font-medium text-text-gray text-right">-</span>
+                      <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">-</span>
+                      <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">-</span>
+                      <span className="w-6 h-6 flex flex-col justify-center items-center shrink-0">
+                        <StarIcon favorited={favorites.has(phId)} onClick={(e) => toggleFavorite(phId, e)} />
+                      </span>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </div>
 
           {/* 상세 패널 */}
-          <DetailPanel device={selected} carrier={carrier} navigate={navigate} key={selected.id} />
+          {selected && <DetailPanel device={selected} carrier={carrier} navigate={navigate} key={selected.id} />}
 
         </div>
       </div>
@@ -344,8 +356,9 @@ const CARRIER_LABELS: Record<string, string> = { skt: 'SKT', kt: 'KT', lgu: 'LG 
 function DetailPanel({ device, carrier, navigate }: {
   device: Device;
   carrier: string;
-  navigate: (s: ConsultingStep, label?: string) => void;
+  navigate: (s: ConsultingStep, label?: string, quoteId?: string) => void;
 }) {
+  const { createTempQuote } = useConsulting();
   const [colorIdx, setColorIdx] = useState(0);
   const [colorOpen, setColorOpen] = useState(false);
   const colorRef = useRef<HTMLDivElement>(null);
@@ -423,10 +436,14 @@ function DetailPanel({ device, carrier, navigate }: {
         </div>
         <button
           className="w-full h-[52px] flex items-center justify-center px-3 bg-primary text-white text-base font-medium rounded-lg border-none cursor-pointer"
-          onClick={() => navigate(
-            { name: 'wireless-consulting', carrier, deviceId: device.id },
-            `${CARRIER_LABELS[carrier] ?? carrier.toUpperCase()}_${device.name} ${device.specs.storage}`
-          )}
+          onClick={async () => {
+            const tempQuote = await createTempQuote('WIRELESS', carrier, device.id, device.name);
+            navigate(
+              { name: 'wireless-consulting', carrier, deviceId: device.id },
+              `${carrier.toUpperCase()}_${device.name}`,
+              tempQuote?.id
+            );
+          }}
         >
           상담 진행
         </button>

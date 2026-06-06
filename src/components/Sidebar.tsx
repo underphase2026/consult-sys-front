@@ -2,31 +2,31 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 
 // ── 프로필 ──────────────────────────────────────
-import KDH from '../images/KDH.svg';
+import KDH from '../images/logos/KDH.svg';
 
 // ── 상단 ────────────────────────────────────────
-import BellIcon    from '../images/bell.svg';
-import VisitIcon   from '../images/visit.svg';
+import BellIcon    from '../images/icons/bell.svg';
+import VisitIcon   from '../images/icons/visit.svg';
 
 // ── 홈 ──────────────────────────────────────────
-import HomeIcon    from '../images/home.svg';
+import HomeIcon    from '../images/icons/home.svg';
 
 // ── 영업 ────────────────────────────────────────
-import MeetingIcon   from '../images/meeting.svg';
-import CustomerIcon  from '../images/customer.svg';
+import MeetingIcon   from '../images/icons/meeting.svg';
+import CustomerIcon  from '../images/icons/customer.svg';
 
 // ── 운영 ────────────────────────────────────────
-import BusinessIcon  from '../images/Business.svg';
-import InventoryIcon from '../images/재고.svg';
+import BusinessIcon  from '../images/icons/Business.svg';
+import InventoryIcon from '../images/icons/재고.svg';
 
 // ── 관리 ────────────────────────────────────────
-import MyMarketIcon  from '../images/mangement.svg';
-import OrgIcon       from '../images/organization.svg';
+import MyMarketIcon  from '../images/icons/mangement.svg';
+import OrgIcon       from '../images/icons/organization.svg';
 
 // ── 하단 ────────────────────────────────────────
-import SettingIcon   from '../images/setting.svg';
-import PayIcon       from '../images/pay.svg';
-import SignOutIcon   from '../images/sign-out.svg';
+import SettingIcon   from '../images/icons/setting.svg';
+import PayIcon       from '../images/icons/pay.svg';
+import SignOutIcon   from '../images/icons/sign-out.svg';
 
 // ─────────────────────────────────────────────────────────────
 // Active 아이콘 (피그마 active 속성: #B8D4FF 연파랑, #1A80FF 파랑)

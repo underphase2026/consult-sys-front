@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import PublicHeader from '../components/PublicHeader';
-import Footer from '../components/Footer';
+import PublicHeader from '../../components/PublicHeader';
+import Footer from '../../components/Footer';
 
 const TERMS = [
   {

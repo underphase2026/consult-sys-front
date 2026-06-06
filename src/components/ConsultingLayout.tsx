@@ -1,3 +1,4 @@
+import React, { useRef, useState } from 'react';
 import Sidebar from './Sidebar';
 import ConsultingStepContent from './ConsultingStepContent';
 import { useConsultingTabs } from '../contexts/ConsultingTabsContext';
@@ -9,6 +10,32 @@ interface Props {
 
 export default function ConsultingLayout({ orderId = '#20260520-7135' }: Props) {
   const { tabs, activeTabId, addTab, removeTab, setActiveTab } = useConsultingTabs();
+  
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [dragged, setDragged] = useState(false);
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(true);
+    setDragged(false);
+    setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
+    setScrollLeft(scrollContainerRef.current.scrollLeft);
+  };
+
+  const onMouseLeave = () => setIsDragging(false);
+  const onMouseUp = () => setIsDragging(false);
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 2; // Scroll speed multiplier
+    if (Math.abs(x - startX) > 5) setDragged(true);
+    scrollContainerRef.current.scrollLeft = scrollLeft - walk;
+  };
 
   return (
     <div className="flex h-screen bg-[#F5F6FA]">
@@ -30,7 +57,20 @@ export default function ConsultingLayout({ orderId = '#20260520-7135' }: Props) 
         </header>
 
         {/* 탭 바 */}
-        <div className="flex items-center h-11 bg-white border-b border-input-border shrink-0 px-2">
+        <div 
+          ref={scrollContainerRef}
+          onMouseDown={onMouseDown}
+          onMouseLeave={onMouseLeave}
+          onMouseUp={onMouseUp}
+          onMouseMove={onMouseMove}
+          className="flex items-center h-11 bg-white border-b border-input-border shrink-0 px-2 overflow-x-auto hide-scrollbar"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', cursor: isDragging ? 'grabbing' : 'grab' }}
+        >
+          <style>{`
+            .hide-scrollbar::-webkit-scrollbar {
+              display: none;
+            }
+          `}</style>
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
             const badgeLabel = tab.step.name.startsWith('wireless') ? '무선'
@@ -39,8 +79,14 @@ export default function ConsultingLayout({ orderId = '#20260520-7135' }: Props) 
             return (
               <div
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex justify-center items-center gap-2 h-full py-2 px-0.5 cursor-pointer select-none border-b-2
+                onClickCapture={(e) => {
+                  if (dragged) {
+                    e.stopPropagation();
+                  } else {
+                    setActiveTab(tab.id);
+                  }
+                }}
+                className={`flex justify-center items-center gap-2 h-full py-2 px-0.5 cursor-pointer select-none border-b-2 shrink-0 whitespace-nowrap
                   ${isActive
                     ? 'border-b-primary bg-white text-[#111827]'
                     : 'border-b-transparent text-[#9CA3AF]'
@@ -69,7 +115,7 @@ export default function ConsultingLayout({ orderId = '#20260520-7135' }: Props) 
           })}
 
           <button
-            className="w-10 h-11 flex items-center justify-center text-[#C4C4D0] bg-transparent border-none cursor-pointer"
+            className="w-10 h-11 flex items-center justify-center text-[#C4C4D0] bg-transparent border-none cursor-pointer shrink-0"
             onClick={addTab}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -79,7 +125,7 @@ export default function ConsultingLayout({ orderId = '#20260520-7135' }: Props) 
         </div>
 
         {/* 본문 */}
-        <main className="flex-1 overflow-y-auto" key={activeTabId}>
+        <main className="flex-1 overflow-y-auto">
           <ConsultingStepContent />
         </main>
 

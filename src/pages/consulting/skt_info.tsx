@@ -1,32 +1,46 @@
 import { useState, useRef, useEffect, ReactNode, Fragment } from 'react';
-import { ConsultingStep } from '../contexts/ConsultingTabsContext';
-import Iphone17eImg from '../images/Iphone17e.svg';
-import BadgeApplePay   from '../images/badge-applepay.svg';
-import BadgeFaceId     from '../images/badge-faceid.svg';
-import BadgeWaterproof from '../images/badge-waterproof.svg';
-import WiredChargeIcon from '../images/wired_charge.svg';
-import UsimIcon        from '../images/usim.svg';
-
-interface DeviceColor { name: string; hex: string; }
-interface Device { id: string; brand: string; name: string; model: string; price: string; colors: DeviceColor[]; }
-
-const DEVICES: Device[] = [
-  {
-    id: 'iphone-17e', brand: 'Apple', name: '아이폰 17e', model: 'IP17E_256GB', price: '990,000원',
-    colors: [
-      { name: '소프트핑크', hex: '#F2B8C6' },
-      { name: '화이트',     hex: '#F5F5F0' },
-      { name: '블랙',       hex: '#1C1C1E' },
-    ],
-  },
-];
+import { useConsulting, getCachedDevices, type DeviceData } from '../../hooks/useConsulting';
+import { ConsultingStep } from '../../contexts/ConsultingTabsContext';
+import Iphone17eImg from '../../images/devices/Iphone17e.svg';
+import BadgeApplePay   from '../../images/badges/badge-applepay.svg';
+import BadgeFaceId     from '../../images/badges/badge-faceid.svg';
+import BadgeWaterproof from '../../images/badges/badge-waterproof.svg';
+import WiredChargeIcon from '../../images/badges/wired_charge.svg';
+import UsimIcon        from '../../images/badges/usim.svg';
 
 const CARRIER_LABELS: Record<string, string> = { skt: 'SKT', kt: 'KT', lgu: 'LG U+' };
 
+const DEVICE_IMAGES: Record<string, string> = {
+  'iphone-17e': Iphone17eImg,
+};
+
 interface Props { carrier: string; deviceId: string; navigate: (s: ConsultingStep, label?: string) => void; }
 
-export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: Props) {
-  const device = DEVICES.find(d => d.id === deviceId) ?? DEVICES[0];
+export default function PaymentInfo(props: Props) {
+  const { fetchDevices } = useConsulting();
+  const [device, setDevice] = useState<DeviceData | null>(() => {
+    const cached = getCachedDevices(props.carrier);
+    return cached?.find(d => d.id === props.deviceId) || null;
+  });
+
+  useEffect(() => {
+    if (!device) {
+      fetchDevices(props.carrier).then(data => {
+        const found = data.find(d => d.id === props.deviceId);
+        if (found) setDevice(found);
+        else if (data.length > 0) setDevice(data[0]);
+      });
+    }
+  }, [props.carrier, props.deviceId, fetchDevices, device]);
+
+  if (!device) {
+    return <div className="py-[60px] flex justify-center w-full">데이터를 불러오는 중입니다...</div>;
+  }
+
+  return <PaymentInfoContent {...props} device={device} />;
+}
+
+function PaymentInfoContent({ carrier, deviceId, navigate: _navigate, device }: Props & { device: DeviceData }) {
 
   const [colorIdx, setColorIdx]     = useState(0);
   const [colorOpen, setColorOpen]   = useState(false);
@@ -89,7 +103,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
         <div className="rounded-xl border border-[#E2E8F0] overflow-hidden">
           {/* Frame 707: 타이틀 헤더 */}
           <div className="h-11 flex items-center justify-between py-2 px-3 self-stretch bg-[#F8F9FA] border-r border-b border-[#E8ECF2]">
-            <span className="text-lg font-semibold text-[#111827]">{device.name} 256GB</span>
+            <span className="text-lg font-semibold text-[#111827]">{device.name}</span>
             <button className="flex items-center gap-1 text-sm text-[#9CA3AF] bg-transparent border-none cursor-pointer p-0">
               <span>상세보기</span>
               <svg width="6" height="10" viewBox="0 0 6 10" fill="none">
@@ -101,7 +115,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
           <div className="flex py-5 px-3 justify-center items-start gap-5 self-stretch bg-white border-b border-[#E2E8F0]">
             {/* Frame 772: 180x180, aspect-ratio:1/1, bg:cover */}
             <img
-              src={Iphone17eImg}
+              src={DEVICE_IMAGES[device.id] || Iphone17eImg}
               alt={device.name}
               className="shrink-0 object-cover"
               style={{ width: 180, height: 180, aspectRatio: '1/1' }}
@@ -126,15 +140,15 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
               <div className="flex py-3 px-2 flex-col justify-center items-start gap-3 self-stretch border-t border-b border-[#E2E8F0] bg-[#F8F9FA]">
                 {/* Frame 783~785: 일반 행 — 열(234px) · 라벨(60px) · 값(166px) 고정 */}
                 {([
-                  [['CPU','A19칩'],['배터리','4005mah']],
-                  [['RAM','8GB'],['무게','200g']],
-                  [['저장공간','256GB'],['디스플레이','6.1인치']],
+                  [['CPU', device.specs.cpu],['배터리', device.specs.battery]],
+                  [['RAM', device.specs.ram],['무게', device.specs.weight]],
+                  [['저장공간', device.specs.storage],['디스플레이', device.specs.display]],
                 ] as [string,string][][]).map((row, i) => (
                   <div key={i} className="flex gap-1 items-start">
                     {row.map(([label, val]) => (
                       <div key={label} className="flex gap-2 w-[234px] shrink-0">
                         <span className="w-[60px] shrink-0 text-[13px] text-[#111827] leading-4">{label}</span>
-                        <span className="w-[166px] text-[13px] text-[#6B7280] leading-4">{val}</span>
+                        <span className="w-[166px] text-[13px] text-[#6B7280] leading-4 truncate">{val}</span>
                       </div>
                     ))}
                   </div>
@@ -144,13 +158,12 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                   <div className="flex gap-2 w-[234px] shrink-0">
                     <span className="w-[60px] shrink-0 text-[13px] text-[#111827] leading-4">카메라</span>
                     <div className="flex flex-col w-[166px]">
-                      <span className="text-[13px] text-[#6B7280] leading-4">전면: 1,200만</span>
-                      <span className="text-[13px] text-[#6B7280] leading-4">후면: 4,800만</span>
+                      <span className="text-[13px] text-[#6B7280] leading-4 whitespace-pre-line">{device.specs.camera}</span>
                     </div>
                   </div>
                   <div className="flex gap-2 w-[234px] shrink-0">
                     <span className="w-[60px] shrink-0 text-[13px] text-[#111827] leading-4">출시일</span>
-                    <span className="w-[166px] text-[13px] text-[#6B7280] leading-4">2026년 3월 11일</span>
+                    <span className="w-[166px] text-[13px] text-[#6B7280] leading-4">{device.specs.released}</span>
                   </div>
                 </div>
               </div>
@@ -219,7 +232,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
               <div className="flex items-center gap-2 w-full h-11">
                 <span className="w-[88px] shrink-0 text-[14px] text-[#6B7280]">출고가</span>
                 <div className="w-[236px] h-11 flex items-center justify-end gap-1 px-3 bg-[#F8F9FA] rounded-lg">
-                  <span className="text-[14px] text-[#111827]">1,250,000</span>
+                  <span className="text-[14px] text-[#111827]">{device.price.replace('원', '')}</span>
                   <span className="text-[12px] text-[#111827]">원</span>
                 </div>
               </div>
@@ -299,7 +312,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                   <span className="w-[88px] shrink-0 text-[14px] text-[#6B7280]">공통지원금</span>
                   <div className={`flex-1 min-w-0 h-11 flex items-center justify-end px-3 gap-1 rounded-lg border border-[#E2E8F0] ${planTab === '공통지원금' ? 'bg-white' : 'bg-[#F8F9FA]'}`}>
                     <span className={`text-[14px] ${planTab === '공통지원금' ? 'text-[#5AAAFF]' : 'text-[#9CA3AF]'}`}>-</span>
-                    <span className={`text-[14px] ${planTab === '공통지원금' ? 'text-[#5AAAFF]' : 'text-[#9CA3AF]'}`}>500,000</span>
+                    <span className={`text-[14px] ${planTab === '공통지원금' ? 'text-[#5AAAFF]' : 'text-[#9CA3AF]'}`}>{device.support.replace('원', '')}</span>
                     <span className={`text-[12px] ${planTab === '공통지원금' ? 'text-[#5AAAFF]' : 'text-[#9CA3AF]'}`}>원</span>
                   </div>
                 </div>

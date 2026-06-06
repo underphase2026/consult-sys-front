@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PublicHeader from '../components/PublicHeader';
-import Footer from '../components/Footer';
-import findPasswordImg from '../images/find_password.svg';
-import PhoneVerifyModal from '../components/PhoneVerifyModal';
+import PublicHeader from '../../components/PublicHeader';
+import Footer from '../../components/Footer';
+import findPasswordImg from '../../images/illustrations/find_password.svg';
+import PhoneVerifyModal from '../../components/PhoneVerifyModal';
 
 export default function FindPassword() {
   const navigate = useNavigate();

@@ -103,7 +103,7 @@ function PaymentInfoContent({ carrier, deviceId, navigate: _navigate, device }: 
         <div className="rounded-xl border border-[#E2E8F0] overflow-hidden">
           {/* Frame 707: 타이틀 헤더 */}
           <div className="h-11 flex items-center justify-between py-2 px-3 self-stretch bg-[#F8F9FA] border-r border-b border-[#E8ECF2]">
-            <span className="text-lg font-semibold text-[#111827]">{device.name} {device.specs.storage.split('/')[0].trim()}</span>
+            <span className="text-lg font-semibold text-[#111827]">{device.name}</span>
             <button className="flex items-center gap-1 text-sm text-[#9CA3AF] bg-transparent border-none cursor-pointer p-0">
               <span>상세보기</span>
               <svg width="6" height="10" viewBox="0 0 6 10" fill="none">

@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PublicHeader from '../components/PublicHeader';
-import Footer from '../components/Footer';
-import ForgotPasswordModal from '../components/ForgotPasswordModal';
-import yojeongSymbol from '../images/logos/yojeong_simbol.svg';
-import passwordDots from '../images/icons/password.svg';
+import PublicHeader from '../../components/PublicHeader';
+import Footer from '../../components/Footer';
+import ForgotPasswordModal from '../../components/ForgotPasswordModal';
+import yojeongSymbol from '../../images/logos/yojeong_simbol.svg';
+import passwordDots from '../../images/icons/password.svg';
 
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function SignIn() {
   const navigate = useNavigate();

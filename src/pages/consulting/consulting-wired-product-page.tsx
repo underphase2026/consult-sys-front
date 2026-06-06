@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import ConsultingLayout from '../components/ConsultingLayout';
+import ConsultingLayout from '../../components/ConsultingLayout';
 
 const CARRIER_LABEL: Record<string, string> = {
   skt: 'SKT',

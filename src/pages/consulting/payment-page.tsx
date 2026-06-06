@@ -1,4 +1,4 @@
-import Sidebar from '../components/Sidebar';
+import Sidebar from '../../components/Sidebar';
 
 const MOCK_PLAN = {
   name: '요정폰 가야점',

@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import PublicHeader from '../components/PublicHeader';
-import Footer from '../components/Footer';
-import signUpImg from '../images/icons/sign-up.svg';
-import { useAuth } from '../hooks/useAuth';
-import { usePhoneAuth } from '../hooks/usePhoneAuth';
-import TimerDisplay from '../components/TimerDisplay';
+import PublicHeader from '../../components/PublicHeader';
+import Footer from '../../components/Footer';
+import signUpImg from '../../images/icons/sign-up.svg';
+import { useAuth } from '../../hooks/useAuth';
+import { usePhoneAuth } from '../../hooks/usePhoneAuth';
+import TimerDisplay from '../../components/TimerDisplay';
 
 const signUpSchema = z.object({
   role: z.enum(['owner', 'staff']),

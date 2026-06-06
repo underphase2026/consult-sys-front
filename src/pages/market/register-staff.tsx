@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import PrivateHeader from '../components/PrivateHeader';
-import Footer from '../components/Footer';
-import marketIcon from '../images/icons/market.svg';
+import PrivateHeader from '../../components/PrivateHeader';
+import Footer from '../../components/Footer';
+import marketIcon from '../../images/icons/market.svg';
 
 export default function RegisterStaff() {
   const navigate = useNavigate();

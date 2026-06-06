@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import ConsultingLayout from '../components/ConsultingLayout';
+import ConsultingLayout from '../../components/ConsultingLayout';
 
 const CARRIER_LABEL: Record<string, string> = {
   skt: 'SKT',
@@ -8,7 +8,7 @@ const CARRIER_LABEL: Record<string, string> = {
 };
 
 import { useState, useEffect } from 'react';
-import { useConsulting, type DeviceData } from '../hooks/useConsulting';
+import { useConsulting, type DeviceData } from '../../hooks/useConsulting';
 
 interface DeviceItem extends Omit<DeviceData, 'specs' | 'colors'> {}
 

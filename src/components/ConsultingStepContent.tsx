@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import PaymentInfo from '../pages/skt_info';
+import PaymentInfo from '../pages/consulting/skt_info';
 import { useConsultingTabs, ConsultingStep } from '../contexts/ConsultingTabsContext';
 import SKT from '../images/carriers/SKT.svg';
 import KT from '../images/carriers/KT.svg';

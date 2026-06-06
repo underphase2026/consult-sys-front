@@ -1,10 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import PrivateHeader from '../components/PrivateHeader';
-import Footer from '../components/Footer';
-import marketIcon from '../images/icons/market.svg';
-import myMarketBg from '../images/illustrations/my_market.svg';
-import rectangleImg from '../images/illustrations/Rectangle.svg';
+import PrivateHeader from '../../components/PrivateHeader';
+import Footer from '../../components/Footer';
+import marketIcon from '../../images/icons/market.svg';
+import myMarketBg from '../../images/illustrations/my_market.svg';
+import rectangleImg from '../../images/illustrations/Rectangle.svg';
 
 const planBadge = (plan: string) =>
   `text-xs font-normal px-2 py-0.5 rounded-full whitespace-nowrap ${
@@ -15,7 +15,7 @@ const planBadge = (plan: string) =>
       : 'text-text-muted bg-input-disabled-bg'
   }`;
 
-import { useStore } from '../hooks/useStore';
+import { useStore } from '../../hooks/useStore';
 
 export default function MyMarket() {
   const navigate = useNavigate();

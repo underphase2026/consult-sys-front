@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import PaymentInfo from '../pages/skt_info';
+import LguPaymentInfo from '../pages/U+_info';
 import { useConsultingTabs, ConsultingStep } from '../contexts/ConsultingTabsContext';
 import SKT from '../images/SKT.svg';
 import KT from '../images/KT.svg';
@@ -85,7 +86,9 @@ export default function ConsultingStepContent() {
     case 'type-select':      return <TypeSelectStep navigate={navigateStep} />;
     case 'wireless-carrier': return <WirelessCarrierStep navigate={navigateStep} />;
     case 'wireless-device':      return <WirelessDeviceStep carrier={step.carrier} navigate={navigateStep} />;
-    case 'wireless-consulting':  return <PaymentInfo carrier={step.carrier} deviceId={step.deviceId} navigate={navigateStep} />;
+    case 'wireless-consulting':  return step.carrier === 'lgu'
+      ? <LguPaymentInfo carrier={step.carrier} deviceId={step.deviceId} navigate={navigateStep} />
+      : <PaymentInfo carrier={step.carrier} deviceId={step.deviceId} navigate={navigateStep} />;
     case 'wired-carrier':        return <WiredCarrierStep />;
     default:                 return null;
   }

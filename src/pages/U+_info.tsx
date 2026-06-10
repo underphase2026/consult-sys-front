@@ -44,6 +44,10 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
   const [약정기간, set약정기간]           = useState('24개월');
   const [할부개월, set할부개월]           = useState('24개월');
   const [유심, set유심]                   = useState('미적용');
+  const [프로그램, set프로그램]           = useState('식스플랜');
+  const [추가지원금입력, set추가지원금입력] = useState('');
+  const [현금납부입력, set현금납부입력]     = useState('');
+  const [프로모션입력, set프로모션입력]     = useState('');
   const [보험Modal, set보험Modal]         = useState('');
   const [부가서비스List, set부가서비스List] = useState<string[]>(['']);
 
@@ -78,6 +82,16 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
 
   const carrierLabel = CARRIER_LABELS[carrier] ?? carrier.toUpperCase();
   void carrierLabel;
+
+  const 월기본료수 = 99000;
+  const 프로모션수 = parseInt(프로모션입력) || 0;
+  const 월요금수 = 월기본료수 - 프로모션수;
+  const 유심가격표: Record<string, number> = { '미적용': 0, '기존 유심 사용': 0, '후납': 7700, '선납': 7700, '대납': 7700, 'eSIM 후납': 2750 };
+  const 유심가입비수 = 유심가격표[유심] ?? 0;
+  const getInsPrice = (name: string) => { const f = MOCK_INSURANCES.find(i => i.name === name); return f ? parseInt(f.price.replace(/[^0-9]/g, '')) : 0; };
+  const 보험가격수 = getInsPrice(보험Modal);
+  const 부가서비스가격합수 = 부가서비스List.reduce((s, n) => s + getInsPrice(n), 0);
+  const 월청구부가서비스수 = 보험가격수 + 부가서비스가격합수;
 
   return (
     <>
@@ -275,7 +289,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                 <button
                   key={tab}
                   onClick={() => setPlanTab(tab)}
-                  className={`flex-1 flex justify-center items-center self-stretch rounded-lg border-none cursor-pointer text-sm font-medium
+                  className={`flex-1 flex justify-center items-center self-stretch rounded-lg border-none cursor-pointer text-sm font-medium leading-4
                     ${planTab === tab ? 'bg-[#1A80FF] text-white' : 'bg-transparent text-[#6B7280]'}`}
                 >
                   {tab}
@@ -292,10 +306,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                 </div>
                 <div className="flex items-center gap-2 h-11 min-w-0">
                   <span className="w-[88px] shrink-0 text-[14px] text-[#6B7280]">프로그램</span>
-                  <div className={`flex-1 min-w-0 h-11 flex items-center justify-between pl-3 pr-2 rounded-lg border border-[#E2E8F0] overflow-hidden ${planTab === '공통지원금' ? 'bg-white' : 'bg-[#F8F9FA]'}`}>
-                    <span className={`text-[14px] whitespace-nowrap overflow-hidden truncate ${planTab === '공통지원금' ? 'text-[#111827]' : 'text-[#9CA3AF]'}`}>프리미엄패스</span>
-                    <span className="text-[12px] text-[#9CA3AF] whitespace-nowrap shrink-0 ml-2">자동가입</span>
-                  </div>
+                  <Dropdown value={프로그램} options={['식스플랜', '베이직플랜']} onChange={set프로그램} disabled={planTab !== '공통지원금'} />
                 </div>
                 <div className="flex items-center gap-2 h-11 min-w-0">
                   <span className="w-[88px] shrink-0 text-[14px] text-[#6B7280]">공통지원금</span>
@@ -329,15 +340,17 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
 
           {/* Frame 731: A/B 폼 컬럼 — FILL horizontal, CENTER vertical */}
           <div className="flex self-stretch items-center">
-            {/* Frame 721: FIXED 356px, FILL vertical, py-5 px-3 gap-4 */}
-            <div className="flex-1 self-stretch bg-white border-r border-input-border px-3 py-5 flex flex-col gap-4">
-              <FormRow label="할부개월"><Dropdown value={할부개월} options={['6개월', '12개월', '18개월', '24개월', '30개월', '36개월', '48개월']} onChange={set할부개월} /></FormRow>
-              <FormRow label="추가지원금"><StaticField /></FormRow>
-              <FormRow label="현금납부"><StaticField /></FormRow>
-              <FormRow label="선카드할인"><StaticField /></FormRow>
-              <FormRow label="포인트할인"><StaticField /></FormRow>
+            {/* Frame 721: FIXED 356px, FILL vertical, py-5 px-3, justify-between */}
+            <div className="flex-1 self-stretch bg-white border-r border-input-border px-3 py-5 flex flex-col justify-between items-center">
+              <div className="flex flex-col gap-4 self-stretch">
+                <FormRow label="할부개월"><Dropdown value={할부개월} options={['6개월', '12개월', '18개월', '24개월', '30개월', '36개월', '48개월']} onChange={set할부개월} /></FormRow>
+                <FormRow label="유통망지원금"><NegativeInputField value={추가지원금입력} onChange={set추가지원금입력} /></FormRow>
+                <FormRow label="현금납부"><NegativeInputField value={현금납부입력} onChange={set현금납부입력} /></FormRow>
+                <FormRow label="선할인카드"><StaticField /></FormRow>
+                <FormRow label="포인트할인"><StaticField /></FormRow>
+              </div>
               {/* Frame 750: pad=16/12, gap=12, bg=#F8F9FA, border */}
-              <div className="py-4 px-3 bg-[#F8F9FA] border border-[#E2E8F0] flex flex-col gap-3">
+              <div className="h-[116px] py-4 px-3 bg-[#F8F9FA] border border-[#E2E8F0] flex flex-col items-start gap-3 self-stretch">
                 <SummaryRow label="할부원금" value="500,000원" />
                 <SummaryRow label="할부수수료" value="54,849원" showInfo />
                 <SummaryRow label="월 단말 할부금" value="38,780원" primary />
@@ -345,14 +358,16 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
             </div>
             {/* Frame 722: FIXED 356px, FILL vertical, py-5 px-3 gap-4 */}
             <div className="flex-1 self-stretch bg-white px-3 py-5 flex flex-col gap-4">
+              <FormRow label="프리미엄 요금제 약정할인"><StaticField /></FormRow>
+              <FormRow label="플러스플랜 130 가족 할인"><StaticField /></FormRow>
               <FormRow label="결합할인"><StaticField /></FormRow>
               <FormRow label="복지할인"><StaticField /></FormRow>
-              <FormRow label="0히어로할인"><StaticField /></FormRow>
+              <FormRow label="현역병사혜택"><StaticField /></FormRow>
               <FormRow label="청구할인카드"><StaticField /></FormRow>
-              <FormRow label="프로모션"><StaticField /></FormRow>
-              {/* Frame 750: flex:1 0 0, pad=16/12, gap=12, justify-end, items-start, border-t/b only */}
-              <div className="flex-[1_0_0] py-4 px-3 bg-[#F8F9FA] border-t border-b border-[#E2E8F0] flex flex-col justify-end items-start gap-3">
-                <SummaryRow label="월 요금" value="99,000원" primary />
+              <FormRow label="프로모션"><NegativeInputField value={프로모션입력} onChange={set프로모션입력} /></FormRow>
+              {/* Frame 750: pad=16/12, gap=12, bg=#F8F9FA, border-t/b only */}
+              <div className="h-[116px] py-4 px-3 bg-[#F8F9FA] border-t border-b border-[#E2E8F0] flex flex-col items-start gap-3">
+                <SummaryRow label="월 요금" value={`${월요금수.toLocaleString('ko-KR')}원`} primary />
               </div>
             </div>
           </div>
@@ -380,7 +395,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                 wrapperClassName="relative w-[236px] shrink-0"
               />
               <div className="w-[136px] shrink-0 h-11 flex items-center justify-end py-3 px-3 bg-[#F8F9FA] rounded-lg">
-                <span className="text-sm text-[#111827]">0원</span>
+                <span className="text-sm text-[#111827]">{유심가입비수.toLocaleString('ko-KR')}원</span>
               </div>
             </div>
 
@@ -440,8 +455,8 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
 
             {/* Frame 750: 요약 */}
             <div className="py-4 px-3 flex flex-col items-start gap-3 self-stretch border-t border-b border-[#E2E8F0] bg-[#F8F9FA]">
-              <SummaryRow label="유심가입비" value="500,000원" />
-              <SummaryRow label="월 청구 부가서비스 요금(보험, 부가서비스)" value="38,780원" valueClassName="text-base font-semibold text-[#EF4444]" />
+              <SummaryRow label="유심가입비" value={`${유심가입비수.toLocaleString('ko-KR')}원`} />
+              <SummaryRow label="월 청구 부가서비스 요금(보험, 부가서비스)" value={`${월청구부가서비스수.toLocaleString('ko-KR')}원`} valueClassName="text-base font-semibold text-[#EF4444]" />
             </div>
 
           </div>
@@ -1002,6 +1017,26 @@ function StaticField() {
   return (
     <div className="flex-1 h-11 flex items-center justify-end px-3 rounded-lg border border-input-border bg-white">
       <span className="text-sm text-[#9CA3AF]">미적용</span>
+    </div>
+  );
+}
+
+function NegativeInputField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [focused, setFocused] = useState(false);
+  const num = parseInt(value) || 0;
+  const displayValue = focused ? value : (num > 0 ? `-${num.toLocaleString('ko-KR')}원` : '');
+  return (
+    <div className="flex-1 h-11 flex items-center px-3 rounded-lg border border-input-border bg-white">
+      <input
+        type="text"
+        inputMode="numeric"
+        value={displayValue}
+        onChange={e => { if (focused) onChange(e.target.value.replace(/[^0-9]/g, '')); }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder="미적용"
+        className="flex-1 bg-transparent border-none outline-none text-sm text-right placeholder:text-[#9CA3AF] text-[#111827]"
+      />
     </div>
   );
 }

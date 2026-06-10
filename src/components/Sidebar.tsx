@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
 // ── 프로필 ──────────────────────────────────────
@@ -153,10 +153,6 @@ export default function Sidebar({
   const [expanded, setExpanded]           = useState(false);
   const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
   const navigate  = useNavigate();
-  const location  = useLocation();
-
-  const isActive = (path: string) =>
-    location.pathname === path || location.pathname.startsWith(path + '/');
 
   const toggleSidebar = () => {
     if (expanded) setOpenDropdowns([]);
@@ -237,7 +233,7 @@ export default function Sidebar({
                     ActiveIcon={item.ActiveIcon}
                     label={item.label}
                     expanded={expanded}
-                    active={isActive(item.path)}
+
                     hasArrow={item.hasArrow}
                     subItems={item.subItems}
                     isOpen={openDropdowns.includes(item.key)}
@@ -258,7 +254,6 @@ export default function Sidebar({
               icon={item.icon}
               label={item.label}
               expanded={expanded}
-              active={false}
               hasArrow={false}
               onClick={() => handleBottomClick(item.path)}
               onSubItemClick={() => {}}
@@ -274,13 +269,12 @@ export default function Sidebar({
 // NavItem — 피그마 아이콘 원본 크기 40×36 사용
 // ─────────────────────────────────────────────────────────────
 function NavItem({
-  icon, ActiveIcon, label, expanded, active, hasArrow, subItems, isOpen, onClick, onSubItemClick,
+  icon, ActiveIcon, label, expanded, hasArrow, subItems, isOpen, onClick, onSubItemClick,
 }: {
   icon: string;
   ActiveIcon?: React.ComponentType;
   label: string;
   expanded: boolean;
-  active: boolean;
   hasArrow: boolean;
   subItems?: SubItem[];
   isOpen?: boolean;
@@ -296,12 +290,7 @@ function NavItem({
             ? 'w-[calc(100%-40px)] mx-5 h-9 gap-2'
             : 'w-10 h-9 justify-center mx-auto'
           }
-          ${isOpen
-            ? 'bg-transparent'
-            : active
-              ? 'bg-white shadow-sm'
-              : 'bg-transparent hover:bg-[#E5E5ED]'
-          }
+          ${isOpen ? 'bg-transparent' : 'bg-transparent hover:bg-[#E5E5ED]'}
         `}
       >
         {/* 메인 클릭 영역: 드롭다운 열린 상태면 클릭 비활성 */}
@@ -318,9 +307,7 @@ function NavItem({
             : <img src={icon} alt={label} className="w-10 shrink-0 object-contain" style={{ height: '36px' }} />
           }
           {expanded && (
-            <span className={`flex-1 text-sm text-left truncate
-              ${active ? 'text-primary font-semibold' : 'text-[#374151]'}`}
-            >
+            <span className="flex-1 text-sm leading-6 font-medium text-left truncate text-[#111827]">
               {label}
             </span>
           )}

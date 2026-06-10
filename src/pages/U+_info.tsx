@@ -48,6 +48,15 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
   const [추가지원금입력, set추가지원금입력] = useState('');
   const [현금납부입력, set현금납부입력]     = useState('');
   const [프로모션입력, set프로모션입력]     = useState('');
+  const [포인트할인입력, set포인트할인입력]   = useState('');
+  const [약정할인ModalOpen, set약정할인ModalOpen] = useState(false);
+  const [약정할인적용, set약정할인적용]       = useState(false);
+  const [가족할인ModalOpen, set가족할인ModalOpen] = useState(false);
+  const [가족할인적용, set가족할인적용]       = useState(false);
+  const [복지할인ModalOpen, set복지할인ModalOpen] = useState(false);
+  const [복지할인선택, set복지할인선택]       = useState('미적용');
+  const [현역병사ModalOpen, set현역병사ModalOpen] = useState(false);
+  const [현역병사적용, set현역병사적용]       = useState(false);
   const [보험Modal, set보험Modal]         = useState('');
   const [부가서비스List, set부가서비스List] = useState<string[]>(['']);
 
@@ -83,9 +92,15 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
   const carrierLabel = CARRIER_LABELS[carrier] ?? carrier.toUpperCase();
   void carrierLabel;
 
+  const 출고가수 = 1250000;
+  const 포인트할인수 = parseInt(포인트할인입력) || 0;
+  const 할부개월수 = parseInt(할부개월) || 24;
+  const 월단말할부금수 = 할부개월수 > 0 ? Math.round((출고가수 - 포인트할인수) / 할부개월수) : 0;
+
   const 월기본료수 = 99000;
   const 프로모션수 = parseInt(프로모션입력) || 0;
-  const 월요금수 = 월기본료수 - 프로모션수;
+  const 약정할인적용금액 = (약정할인적용 && planTab === '선택약정할인') ? 5250 : 0;
+  const 월요금수 = 월기본료수 - 프로모션수 - 약정할인적용금액;
   const 유심가격표: Record<string, number> = { '미적용': 0, '기존 유심 사용': 0, '후납': 7700, '선납': 7700, '대납': 7700, 'eSIM 후납': 2750 };
   const 유심가입비수 = 유심가격표[유심] ?? 0;
   const getInsPrice = (name: string) => { const f = MOCK_INSURANCES.find(i => i.name === name); return f ? parseInt(f.price.replace(/[^0-9]/g, '')) : 0; };
@@ -347,26 +362,42 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                 <FormRow label="유통망지원금"><NegativeInputField value={추가지원금입력} onChange={set추가지원금입력} /></FormRow>
                 <FormRow label="현금납부"><NegativeInputField value={현금납부입력} onChange={set현금납부입력} /></FormRow>
                 <FormRow label="선할인카드"><StaticField /></FormRow>
-                <FormRow label="포인트할인"><StaticField /></FormRow>
+                <FormRow label="포인트할인"><NegativeInputField value={포인트할인입력} onChange={set포인트할인입력} /></FormRow>
               </div>
               {/* Frame 750: pad=16/12, gap=12, bg=#F8F9FA, border */}
               <div className="h-[116px] py-4 px-3 bg-[#F8F9FA] border border-[#E2E8F0] flex flex-col items-start gap-3 self-stretch">
                 <SummaryRow label="할부원금" value="500,000원" />
                 <SummaryRow label="할부수수료" value="54,849원" showInfo />
-                <SummaryRow label="월 단말 할부금" value="38,780원" primary />
+                <SummaryRow label="월 단말 할부금" value={`${월단말할부금수.toLocaleString('ko-KR')}원`} primary />
               </div>
             </div>
             {/* Frame 722: FIXED 356px, FILL vertical, py-5 px-3 gap-4 */}
             <div className="flex-1 self-stretch bg-white px-3 py-5 flex flex-col gap-4">
-              <FormRow label="프리미엄 요금제 약정할인"><StaticField /></FormRow>
-              <FormRow label="플러스플랜 130 가족 할인"><StaticField /></FormRow>
+              <FormRow label="프리미어 요금제 약정할인" labelSize="text-[13px]" labelWidth="w-[88px]">
+                <div onClick={() => set약정할인ModalOpen(true)} className="flex-1 h-11 flex items-center justify-end px-3 rounded-lg border border-input-border bg-white cursor-pointer">
+                  <span className={`text-sm ${약정할인적용 ? 'text-[#111827]' : 'text-[#9CA3AF]'}`}>{약정할인적용 ? '적용' : '미적용'}</span>
+                </div>
+              </FormRow>
+              <FormRow label="플러스플랜 130 가족 할인">
+                <div onClick={() => set가족할인ModalOpen(true)} className="flex-1 h-11 flex items-center justify-end px-3 rounded-lg border border-input-border bg-white cursor-pointer">
+                  <span className={`text-sm ${가족할인적용 ? 'text-[#111827]' : 'text-[#9CA3AF]'}`}>{가족할인적용 ? '적용' : '미적용'}</span>
+                </div>
+              </FormRow>
               <FormRow label="결합할인"><StaticField /></FormRow>
-              <FormRow label="복지할인"><StaticField /></FormRow>
-              <FormRow label="현역병사혜택"><StaticField /></FormRow>
+              <FormRow label="복지할인">
+                <div onClick={() => set복지할인ModalOpen(true)} className="flex-1 h-11 flex items-center justify-end px-3 rounded-lg border border-input-border bg-white cursor-pointer">
+                  <span className={`text-sm ${복지할인선택 === '미적용' ? 'text-[#9CA3AF]' : 'text-[#111827]'}`}>{복지할인선택}</span>
+                </div>
+              </FormRow>
+              <FormRow label="현역병사혜택">
+                <div onClick={() => set현역병사ModalOpen(true)} className="flex-1 h-11 flex items-center justify-end px-3 rounded-lg border border-input-border bg-white cursor-pointer">
+                  <span className={`text-sm ${현역병사적용 ? 'text-[#111827]' : 'text-[#9CA3AF]'}`}>{현역병사적용 ? '적용' : '미적용'}</span>
+                </div>
+              </FormRow>
               <FormRow label="청구할인카드"><StaticField /></FormRow>
               <FormRow label="프로모션"><NegativeInputField value={프로모션입력} onChange={set프로모션입력} /></FormRow>
               {/* Frame 750: pad=16/12, gap=12, bg=#F8F9FA, border-t/b only */}
-              <div className="h-[116px] py-4 px-3 bg-[#F8F9FA] border-t border-b border-[#E2E8F0] flex flex-col items-start gap-3">
+              <div className="h-[116px] py-4 px-3 bg-[#F8F9FA] border-t border-b border-[#E2E8F0] flex flex-col justify-end">
                 <SummaryRow label="월 요금" value={`${월요금수.toLocaleString('ko-KR')}원`} primary />
               </div>
             </div>
@@ -633,6 +664,35 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
         setSortOpen={setPlanSortOpen}
         onSort={setPlanSort}
         sortRef={planSortRef}
+      />
+    )}
+    {/* ── 프리미어 요금제 약정할인 모달 ── */}
+    {약정할인ModalOpen && (
+      <약정할인Modal
+        onApply={() => { set약정할인적용(true); set약정할인ModalOpen(false); }}
+        onClose={() => set약정할인ModalOpen(false)}
+      />
+    )}
+    {/* ── 플러스플랜 130 가족할인 모달 ── */}
+    {가족할인ModalOpen && (
+      <가족할인Modal
+        onApply={() => { set가족할인적용(true); set가족할인ModalOpen(false); }}
+        onClose={() => set가족할인ModalOpen(false)}
+      />
+    )}
+    {/* ── 복지할인 모달 ── */}
+    {복지할인ModalOpen && (
+      <복지할인Modal
+        selected={복지할인선택}
+        onApply={(v) => { set복지할인선택(v); set복지할인ModalOpen(false); }}
+        onClose={() => set복지할인ModalOpen(false)}
+      />
+    )}
+    {/* ── 현역병사혜택 모달 ── */}
+    {현역병사ModalOpen && (
+      <현역병사Modal
+        onApply={() => { set현역병사적용(true); set현역병사ModalOpen(false); }}
+        onClose={() => set현역병사ModalOpen(false)}
       />
     )}
     </>
@@ -929,6 +989,206 @@ function InsuranceSelectModal({
   );
 }
 
+// ─────────────────────────────────────────────────────────────
+// LG U+ 할인 모달 공통 섹션 컴포넌트
+// ─────────────────────────────────────────────────────────────
+function LguInfoSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <span className="text-[18px] font-semibold text-[#111827]">{title}</span>
+      <div className="px-3 py-3 bg-[#F8F9FA] rounded-lg flex flex-col gap-2">{children}</div>
+    </div>
+  );
+}
+
+function LguModalShell({ title, titleExtra, onClose, children, onApply }: {
+  title: string;
+  titleExtra?: ReactNode;
+  onClose: () => void;
+  children: ReactNode;
+  onApply: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={onClose}>
+      <div className="w-[900px] bg-white rounded-xl p-6 flex flex-col gap-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0]">
+          <div className="flex items-center gap-3">
+            <span className="text-[20px] font-semibold text-[#111827]">{title}</span>
+            {titleExtra}
+          </div>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center bg-transparent border-none cursor-pointer p-0">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1l12 12M13 1L1 13" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div className="flex flex-col gap-6 overflow-y-auto max-h-[540px]">{children}</div>
+        <button onClick={onApply} className="w-full h-[52px] bg-[#1A80FF] text-white text-[16px] font-semibold rounded-lg border-none cursor-pointer">
+          적용
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 프리미어 요금제 약정할인 모달
+// ─────────────────────────────────────────────────────────────
+function 약정할인Modal({ onApply, onClose }: { onApply: () => void; onClose: () => void }) {
+  const REFUND_HEADERS = ['약정기간', '~6개월', '7~12개월', '13~16개월', '17~20개월', '21~24개월'];
+  const REFUND_VALUES  = ['구간 별 반환 비율', '100%', '50%', '30%', '-20%', '-40%'];
+  return (
+    <LguModalShell
+      title="프리미어 요금제 약정할인"
+      titleExtra={
+        <button className="flex items-center gap-1 text-[14px] text-[#9CA3AF] bg-transparent border-none cursor-pointer p-0">
+          공식사이트
+          <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+            <path d="M5 1H7V3M7 1L3 5" stroke="#9CA3AF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M1 3V7H5V4" stroke="#9CA3AF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      }
+      onClose={onClose}
+      onApply={onApply}
+    >
+      <LguInfoSection title="1. 가입대상">
+        <span className="text-[16px] text-[#6B7280]">3번(가입 가능 요금제)와 같은 요금제에 가입한 고객</span>
+      </LguInfoSection>
+      <LguInfoSection title="2. 서비스 내용">
+        <span className="text-[16px] text-[#6B7280]">약정 기간(24개월) 동안 부가세 포함 월 5,250원 할인</span>
+      </LguInfoSection>
+      <LguInfoSection title="3. 가입 가능 요금제">
+        <span className="text-[16px] text-[#6B7280]">통합 요금제: 플러스플랜130, 플러스플랜115, 플러스플랜105, 플러스플랜95, 데이터플랜MAX</span>
+        <span className="text-[16px] text-[#6B7280]">5G 요금제: 5G 프리미어 레귤러/에센셜</span>
+        <span className="text-[16px] text-[#6B7280]">LTE 요금제: LTE 프리미어 플러스/에센셜</span>
+      </LguInfoSection>
+      <LguInfoSection title="4. 유의사항(할인 반환금)">
+        <span className="text-[16px] text-[#6B7280]">- 약정 기간 안에 해지하거나 다른 요금제로 변경 시 할인 반환금 발생</span>
+        <div className="border border-[#E2E8F0] rounded overflow-hidden mt-1">
+          <div className="flex bg-[#EAECF0]">
+            {REFUND_HEADERS.map((h, i) => (
+              <div key={h} className={`flex-1 h-8 flex items-center px-2 ${i > 0 ? 'border-l border-[#E2E8F0]' : ''}`}>
+                <span className="text-[14px] text-[#6B7280]">{h}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex border-t border-[#E2E8F0] bg-white">
+            {REFUND_VALUES.map((v, i) => (
+              <div key={i} className={`flex-1 h-10 flex items-center px-2 ${i > 0 ? 'border-l border-[#E2E8F0]' : ''}`}>
+                <span className="text-[13px] text-[#6B7280]">{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </LguInfoSection>
+    </LguModalShell>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 플러스플랜 130 가족할인 모달
+// ─────────────────────────────────────────────────────────────
+function 가족할인Modal({ onApply, onClose }: { onApply: () => void; onClose: () => void }) {
+  return (
+    <LguModalShell title="플러스플랜 130 가족할인" onClose={onClose} onApply={onApply}>
+      <LguInfoSection title="1. 가입대상">
+        <span className="text-[16px] text-[#6B7280]">만 18세 이하 자녀 (부모 플러스플랜 130 가입 시)</span>
+      </LguInfoSection>
+      <LguInfoSection title="2. 서비스 내용">
+        <span className="text-[16px] text-[#6B7280]">월정액에서 최대 33,000원 할인</span>
+      </LguInfoSection>
+      <LguInfoSection title="3. 가입 가능 요금제">
+        <span className="text-[16px] text-[#6B7280]">자녀 월정액 33,000원 이상 요금제 가입 시</span>
+      </LguInfoSection>
+      <LguInfoSection title="4. 유의사항">
+        <span className="text-[16px] text-[#6B7280]">자녀가 만 20세가 될 때까지 할인 가능</span>
+        <span className="text-[16px] text-[#6B7280]">법정대리인의 플러스플랜 130 가입 회선 1개당 자녀 1회선 할인</span>
+      </LguInfoSection>
+    </LguModalShell>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 복지할인 모달
+// ─────────────────────────────────────────────────────────────
+const 복지할인ROWS = [
+  { category: '미적용',                    desc: '-',                                                                                                                                             max: '0원'      },
+  { category: '장애인',                    desc: '월정액(기본요금), 음성통화요금, 데이터 이용요금 각 35% 할인',                                                                                  max: '35%'      },
+  { category: '국가유공자',                desc: '월정액(기본요금), 음성통화요금, 데이터 이용요금 각 35% 할인',                                                                                  max: '35%'      },
+  { category: '기초생활수급자 (생계/의료)', desc: '월정액(기본요금) 최대 28,600원까지 할인, 음성통화요금+데이터 이용요금 합산액 50%할인(최대 36,850원)',                                         max: '23,650원' },
+  { category: '기초생활수급자 (주거/교육)', desc: '월정액(기본요금) 12,100원 할인, 12,100원 초과 월정액(기본요금)+음성통화요금+데이터 이용요금 합산액 35%할인(최대 11,550원)',                   max: '23,650원' },
+  { category: '차상위계층',               desc: '월정액(기본요금) 12,100원 할인, 12,100원 초과 월정액(기본요금)+음성통화요금+데이터 이용요금 합산액 35%할인(최대 11,550원)',                    max: '23,650원' },
+  { category: '기초연금수급자 (만65세 이상)', desc: '월정액(기본요금)+음성통화요금+데이터 이용요금 합산액 50%할인(최대 12,100원)',                                                              max: '12,100원' },
+];
+
+function 복지할인Modal({ selected, onApply, onClose }: { selected: string; onApply: (v: string) => void; onClose: () => void }) {
+  const [localSelected, setLocalSelected] = useState(selected);
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={onClose}>
+      <div className="w-[900px] bg-white rounded-xl p-6 flex flex-col gap-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0]">
+          <span className="text-[20px] font-semibold text-[#111827]">복지할인</span>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center bg-transparent border-none cursor-pointer p-0">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1l12 12M13 1L1 13" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div className="flex items-center h-12 px-3 bg-[#F8F9FA] border border-[#E2E8F0] rounded-lg">
+          <span className="w-[176px] shrink-0 text-[14px] text-[#9CA3AF]">구분</span>
+          <span className="flex-1 text-[14px] text-[#9CA3AF]">상세설명</span>
+          <span className="w-[80px] shrink-0 text-[14px] text-[#9CA3AF]">최대할인</span>
+        </div>
+        <div className="flex flex-col border border-[#E2E8F0] rounded-lg overflow-hidden">
+          {복지할인ROWS.map(row => (
+            <div
+              key={row.category}
+              onClick={() => setLocalSelected(row.category)}
+              className={`flex items-center min-h-[64px] px-3 cursor-pointer border-b border-[#E2E8F0] last:border-b-0 ${localSelected === row.category ? 'bg-[#E8F2FF]' : 'bg-white'}`}
+            >
+              <span className="w-[176px] shrink-0 text-[14px] font-medium text-[#111827]">{row.category}</span>
+              <span className="flex-1 text-[12px] text-[#6B7280] break-words">{row.desc}</span>
+              <span className="w-[80px] shrink-0 text-[14px] font-medium text-[#6B7280] text-right">{row.max}</span>
+            </div>
+          ))}
+        </div>
+        <button onClick={() => onApply(localSelected)} className="w-full h-[52px] bg-[#1A80FF] text-white text-[16px] font-semibold rounded-lg border-none cursor-pointer">
+          적용
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 현역병사 요금할인 모달
+// ─────────────────────────────────────────────────────────────
+function 현역병사Modal({ onApply, onClose }: { onApply: () => void; onClose: () => void }) {
+  return (
+    <LguModalShell title="현역병사 요금할인" onClose={onClose} onApply={onApply}>
+      <LguInfoSection title="1. 가입대상">
+        <span className="text-[16px] text-[#6B7280]">의무 복무중인 현역 군인(임기제 부사관, 대체복무요원, 의무경찰, 의무소방원 포함)</span>
+      </LguInfoSection>
+      <LguInfoSection title="2. 서비스 내용">
+        <span className="text-[16px] text-[#6B7280]">현역병사임을 제출 서류로 확인한 날로부터 전역일 다음 달까지 매달 통신요금 20% 할인</span>
+      </LguInfoSection>
+      <LguInfoSection title="3. 가입 가능 요금제">
+        <span className="text-[16px] text-[#6B7280]">플러스플랜130, 플러스플랜115, 플러스플랜105, 플러스플랜95</span>
+        <span className="text-[16px] text-[#6B7280]">데이터플랜MAX/150GB/125GB/95GB/80GB/50GB/31GB/24GB/14GB/9GB/5GB/1.5GB</span>
+      </LguInfoSection>
+      <LguInfoSection title="4. 유의사항">
+        <span className="text-[16px] text-[#6B7280]">통합요금제에서는 현역병사 요금할인의 추가 데이터 미제공</span>
+        <span className="text-[16px] text-[#6B7280]">현역병사 데이터 33 요금제와 중복 할인 불가</span>
+      </LguInfoSection>
+      <LguInfoSection title="5. 필요서류">
+        <span className="text-[16px] text-[#6B7280]">현역병사: 입영 통지서, 입영(예정) 사실 확인서, 복무 확인서, 병적증명서, 주민등록표 초본 중 1개</span>
+        <span className="text-[16px] text-[#6B7280]">대체 복무 요원: 병적증명서, 복무확인서, 주민등록표 초본 중 1개</span>
+      </LguInfoSection>
+    </LguModalShell>
+  );
+}
+
 // Frame 774: 4개 아이콘(데이터·음성·문자·영상) + "-" 값, 구분선 포함
 function UsageIconRow() {
   const icons = [
@@ -988,10 +1248,10 @@ function Dropdown({ value, options, onChange, disabled, wrapperClassName, option
   );
 }
 
-function FormRow({ label, children }: { label: string; children: ReactNode }) {
+function FormRow({ label, children, labelSize = 'text-[14px]', labelWidth = 'w-[84px]' }: { label: string; children: ReactNode; labelSize?: string; labelWidth?: string }) {
   return (
     <div className="flex items-center h-11 gap-2">
-      <span className="w-[84px] shrink-0 text-sm text-[#6B7280]">{label}</span>
+      <span className={`${labelWidth} shrink-0 ${labelSize} text-[#6B7280]`}>{label}</span>
       <div className="flex-1">{children}</div>
     </div>
   );

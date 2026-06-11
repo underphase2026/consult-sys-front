@@ -94,8 +94,10 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
 
   const 출고가수 = 1250000;
   const 포인트할인수 = parseInt(포인트할인입력) || 0;
+  const 유통망지원금수 = parseInt(추가지원금입력) || 0;
+  const 현금납부수 = parseInt(현금납부입력) || 0;
   const 할부개월수 = parseInt(할부개월) || 24;
-  const 월단말할부금수 = 할부개월수 > 0 ? Math.round((출고가수 - 포인트할인수) / 할부개월수) : 0;
+  const 월단말할부금수 = 할부개월수 > 0 ? Math.round((출고가수 - 포인트할인수 - 유통망지원금수 - 현금납부수) / 할부개월수) : 0;
 
   const 월기본료수 = 99000;
   const 프로모션수 = parseInt(프로모션입력) || 0;
@@ -670,6 +672,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
     {약정할인ModalOpen && (
       <약정할인Modal
         onApply={() => { set약정할인적용(true); set약정할인ModalOpen(false); }}
+        onReset={() => { set약정할인적용(false); set약정할인ModalOpen(false); }}
         onClose={() => set약정할인ModalOpen(false)}
       />
     )}
@@ -677,6 +680,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
     {가족할인ModalOpen && (
       <가족할인Modal
         onApply={() => { set가족할인적용(true); set가족할인ModalOpen(false); }}
+        onReset={() => { set가족할인적용(false); set가족할인ModalOpen(false); }}
         onClose={() => set가족할인ModalOpen(false)}
       />
     )}
@@ -692,6 +696,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
     {현역병사ModalOpen && (
       <현역병사Modal
         onApply={() => { set현역병사적용(true); set현역병사ModalOpen(false); }}
+        onReset={() => { set현역병사적용(false); set현역병사ModalOpen(false); }}
         onClose={() => set현역병사ModalOpen(false)}
       />
     )}
@@ -1001,12 +1006,13 @@ function LguInfoSection({ title, children }: { title: string; children: ReactNod
   );
 }
 
-function LguModalShell({ title, titleExtra, onClose, children, onApply }: {
+function LguModalShell({ title, titleExtra, onClose, children, onApply, onReset }: {
   title: string;
   titleExtra?: ReactNode;
   onClose: () => void;
   children: ReactNode;
   onApply: () => void;
+  onReset: () => void;
 }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={onClose}>
@@ -1023,9 +1029,14 @@ function LguModalShell({ title, titleExtra, onClose, children, onApply }: {
           </button>
         </div>
         <div className="flex flex-col gap-6 overflow-y-auto max-h-[540px]">{children}</div>
-        <button onClick={onApply} className="w-full h-[52px] bg-[#1A80FF] text-white text-[16px] font-semibold rounded-lg border-none cursor-pointer">
-          적용
-        </button>
+        <div className="flex justify-center gap-5">
+          <button onClick={onReset} className="w-[200px] h-[52px] bg-[#F8F9FA] text-[#9CA3AF] text-[16px] font-medium rounded-lg border-none cursor-pointer">
+            미적용
+          </button>
+          <button onClick={onApply} className="w-[200px] h-[52px] bg-[#1A80FF] text-white text-[16px] font-medium rounded-lg border-none cursor-pointer">
+            적용
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1034,7 +1045,7 @@ function LguModalShell({ title, titleExtra, onClose, children, onApply }: {
 // ─────────────────────────────────────────────────────────────
 // 프리미어 요금제 약정할인 모달
 // ─────────────────────────────────────────────────────────────
-function 약정할인Modal({ onApply, onClose }: { onApply: () => void; onClose: () => void }) {
+function 약정할인Modal({ onApply, onReset, onClose }: { onApply: () => void; onReset: () => void; onClose: () => void }) {
   const REFUND_HEADERS = ['약정기간', '~6개월', '7~12개월', '13~16개월', '17~20개월', '21~24개월'];
   const REFUND_VALUES  = ['구간 별 반환 비율', '100%', '50%', '30%', '-20%', '-40%'];
   return (
@@ -1051,6 +1062,7 @@ function 약정할인Modal({ onApply, onClose }: { onApply: () => void; onClose:
       }
       onClose={onClose}
       onApply={onApply}
+      onReset={onReset}
     >
       <LguInfoSection title="1. 가입대상">
         <span className="text-[16px] text-[#6B7280]">3번(가입 가능 요금제)와 같은 요금제에 가입한 고객</span>
@@ -1089,9 +1101,9 @@ function 약정할인Modal({ onApply, onClose }: { onApply: () => void; onClose:
 // ─────────────────────────────────────────────────────────────
 // 플러스플랜 130 가족할인 모달
 // ─────────────────────────────────────────────────────────────
-function 가족할인Modal({ onApply, onClose }: { onApply: () => void; onClose: () => void }) {
+function 가족할인Modal({ onApply, onReset, onClose }: { onApply: () => void; onReset: () => void; onClose: () => void }) {
   return (
-    <LguModalShell title="플러스플랜 130 가족할인" onClose={onClose} onApply={onApply}>
+    <LguModalShell title="플러스플랜 130 가족할인" onClose={onClose} onApply={onApply} onReset={onReset}>
       <LguInfoSection title="1. 가입대상">
         <span className="text-[16px] text-[#6B7280]">만 18세 이하 자녀 (부모 플러스플랜 130 가입 시)</span>
       </LguInfoSection>
@@ -1101,7 +1113,7 @@ function 가족할인Modal({ onApply, onClose }: { onApply: () => void; onClose:
       <LguInfoSection title="3. 가입 가능 요금제">
         <span className="text-[16px] text-[#6B7280]">자녀 월정액 33,000원 이상 요금제 가입 시</span>
       </LguInfoSection>
-      <LguInfoSection title="4. 유의사항">
+      <LguInfoSection title="4. 유의사항(할인 반환금)">
         <span className="text-[16px] text-[#6B7280]">자녀가 만 20세가 될 때까지 할인 가능</span>
         <span className="text-[16px] text-[#6B7280]">법정대리인의 플러스플랜 130 가입 회선 1개당 자녀 1회선 할인</span>
       </LguInfoSection>
@@ -1116,10 +1128,10 @@ const 복지할인ROWS = [
   { category: '미적용',                    desc: '-',                                                                                                                                             max: '0원'      },
   { category: '장애인',                    desc: '월정액(기본요금), 음성통화요금, 데이터 이용요금 각 35% 할인',                                                                                  max: '35%'      },
   { category: '국가유공자',                desc: '월정액(기본요금), 음성통화요금, 데이터 이용요금 각 35% 할인',                                                                                  max: '35%'      },
-  { category: '기초생활수급자 (생계/의료)', desc: '월정액(기본요금) 최대 28,600원까지 할인, 음성통화요금+데이터 이용요금 합산액 50%할인(최대 36,850원)',                                         max: '23,650원' },
+  { category: '기초생활수급자 (생계/의료)', desc: '월정액(기본요금) 최대 28,600원까지 할인, 음성통화요금+데이터 이용요금 합산액 50%할인(최대 36,850원)',                                         max: '28,650원' },
   { category: '기초생활수급자 (주거/교육)', desc: '월정액(기본요금) 12,100원 할인, 12,100원 초과 월정액(기본요금)+음성통화요금+데이터 이용요금 합산액 35%할인(최대 11,550원)',                   max: '23,650원' },
   { category: '차상위계층',               desc: '월정액(기본요금) 12,100원 할인, 12,100원 초과 월정액(기본요금)+음성통화요금+데이터 이용요금 합산액 35%할인(최대 11,550원)',                    max: '23,650원' },
-  { category: '기초연금수급자 (만65세 이상)', desc: '월정액(기본요금)+음성통화요금+데이터 이용요금 합산액 50%할인(최대 12,100원)',                                                              max: '12,100원' },
+  { category: '기초연금수급자(만 65세 이상)', desc: '월정액(기본요금)+음성통화요금+데이터 이용요금 합산액 50%할인(최대 12,100원)',                                                              max: '12,100원' },
 ];
 
 function 복지할인Modal({ selected, onApply, onClose }: { selected: string; onApply: (v: string) => void; onClose: () => void }) {
@@ -1128,7 +1140,16 @@ function 복지할인Modal({ selected, onApply, onClose }: { selected: string; o
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={onClose}>
       <div className="w-[900px] bg-white rounded-xl p-6 flex flex-col gap-6" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0]">
-          <span className="text-[20px] font-semibold text-[#111827]">복지할인</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[20px] font-semibold text-[#111827]">복지할인</span>
+            <button className="flex items-center gap-1 text-[14px] text-[#9CA3AF] bg-transparent border-none cursor-pointer p-0">
+              공식사이트
+              <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                <path d="M5 1H7V3M7 1L3 5" stroke="#9CA3AF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M1 3V7H5V4" stroke="#9CA3AF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
           <button onClick={onClose} className="w-7 h-7 flex items-center justify-center bg-transparent border-none cursor-pointer p-0">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M1 1l12 12M13 1L1 13" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round"/>
@@ -1136,9 +1157,9 @@ function 복지할인Modal({ selected, onApply, onClose }: { selected: string; o
           </button>
         </div>
         <div className="flex items-center h-12 px-3 bg-[#F8F9FA] border border-[#E2E8F0] rounded-lg">
-          <span className="w-[176px] shrink-0 text-[14px] text-[#9CA3AF]">구분</span>
-          <span className="flex-1 text-[14px] text-[#9CA3AF]">상세설명</span>
-          <span className="w-[80px] shrink-0 text-[14px] text-[#9CA3AF]">최대할인</span>
+          <span className="w-[180px] shrink-0 text-[14px] text-[#9CA3AF]">요금제명</span>
+          <span className="flex-1 text-[14px] text-[#9CA3AF]">월정액</span>
+          <span className="w-[80px] shrink-0 text-[14px] text-[#9CA3AF]">할인</span>
         </div>
         <div className="flex flex-col border border-[#E2E8F0] rounded-lg overflow-hidden">
           {복지할인ROWS.map(row => (
@@ -1147,15 +1168,20 @@ function 복지할인Modal({ selected, onApply, onClose }: { selected: string; o
               onClick={() => setLocalSelected(row.category)}
               className={`flex items-center min-h-[64px] px-3 cursor-pointer border-b border-[#E2E8F0] last:border-b-0 ${localSelected === row.category ? 'bg-[#E8F2FF]' : 'bg-white'}`}
             >
-              <span className="w-[176px] shrink-0 text-[14px] font-medium text-[#111827]">{row.category}</span>
+              <span className="w-[180px] shrink-0 text-[14px] font-medium text-[#111827]">{row.category}</span>
               <span className="flex-1 text-[12px] text-[#6B7280] break-words">{row.desc}</span>
               <span className="w-[80px] shrink-0 text-[14px] font-medium text-[#6B7280] text-right">{row.max}</span>
             </div>
           ))}
         </div>
-        <button onClick={() => onApply(localSelected)} className="w-full h-[52px] bg-[#1A80FF] text-white text-[16px] font-semibold rounded-lg border-none cursor-pointer">
-          적용
-        </button>
+        <div className="flex justify-center gap-5">
+          <button onClick={() => onApply('미적용')} className="w-[200px] h-[52px] bg-[#F8F9FA] text-[#9CA3AF] text-[16px] font-medium rounded-lg border-none cursor-pointer">
+            미적용
+          </button>
+          <button onClick={() => onApply(localSelected)} className="w-[200px] h-[52px] bg-[#1A80FF] text-white text-[16px] font-medium rounded-lg border-none cursor-pointer">
+            적용
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1164,9 +1190,19 @@ function 복지할인Modal({ selected, onApply, onClose }: { selected: string; o
 // ─────────────────────────────────────────────────────────────
 // 현역병사 요금할인 모달
 // ─────────────────────────────────────────────────────────────
-function 현역병사Modal({ onApply, onClose }: { onApply: () => void; onClose: () => void }) {
+function 현역병사Modal({ onApply, onReset, onClose }: { onApply: () => void; onReset: () => void; onClose: () => void }) {
   return (
-    <LguModalShell title="현역병사 요금할인" onClose={onClose} onApply={onApply}>
+    <LguModalShell title="현역병사 요금할인" onClose={onClose} onApply={onApply} onReset={onReset}
+      titleExtra={
+        <button className="flex items-center gap-1 text-[14px] text-[#9CA3AF] bg-transparent border-none cursor-pointer p-0">
+          공식사이트
+          <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+            <path d="M5 1H7V3M7 1L3 5" stroke="#9CA3AF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M1 3V7H5V4" stroke="#9CA3AF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      }
+    >
       <LguInfoSection title="1. 가입대상">
         <span className="text-[16px] text-[#6B7280]">의무 복무중인 현역 군인(임기제 부사관, 대체복무요원, 의무경찰, 의무소방원 포함)</span>
       </LguInfoSection>
@@ -1177,7 +1213,7 @@ function 현역병사Modal({ onApply, onClose }: { onApply: () => void; onClose:
         <span className="text-[16px] text-[#6B7280]">플러스플랜130, 플러스플랜115, 플러스플랜105, 플러스플랜95</span>
         <span className="text-[16px] text-[#6B7280]">데이터플랜MAX/150GB/125GB/95GB/80GB/50GB/31GB/24GB/14GB/9GB/5GB/1.5GB</span>
       </LguInfoSection>
-      <LguInfoSection title="4. 유의사항">
+      <LguInfoSection title="4. 유의사항(필요 서류)">
         <span className="text-[16px] text-[#6B7280]">통합요금제에서는 현역병사 요금할인의 추가 데이터 미제공</span>
         <span className="text-[16px] text-[#6B7280]">현역병사 데이터 33 요금제와 중복 할인 불가</span>
       </LguInfoSection>

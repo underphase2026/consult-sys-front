@@ -57,6 +57,10 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
   const [복지할인선택, set복지할인선택]       = useState('미적용');
   const [현역병사ModalOpen, set현역병사ModalOpen] = useState(false);
   const [현역병사적용, set현역병사적용]       = useState(false);
+  const [선할인카드ModalOpen, set선할인카드ModalOpen] = useState(false);
+  const [선할인카드적용, set선할인카드적용]       = useState(false);
+  const [청구할인카드ModalOpen, set청구할인카드ModalOpen] = useState(false);
+  const [청구할인카드적용, set청구할인카드적용]       = useState(false);
   const [보험Modal, set보험Modal]         = useState('');
   const [부가서비스List, set부가서비스List] = useState<string[]>(['']);
 
@@ -363,7 +367,11 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                 <FormRow label="할부개월"><Dropdown value={할부개월} options={['6개월', '12개월', '18개월', '24개월', '30개월', '36개월', '48개월']} onChange={set할부개월} /></FormRow>
                 <FormRow label="유통망지원금"><NegativeInputField value={추가지원금입력} onChange={set추가지원금입력} /></FormRow>
                 <FormRow label="현금납부"><NegativeInputField value={현금납부입력} onChange={set현금납부입력} /></FormRow>
-                <FormRow label="선할인카드"><StaticField /></FormRow>
+                <FormRow label="선할인카드">
+                  <div onClick={() => set선할인카드ModalOpen(true)} className="flex-1 h-11 flex items-center justify-end px-3 rounded-lg border border-input-border bg-white cursor-pointer">
+                    <span className={`text-sm ${선할인카드적용 ? 'text-[#111827]' : 'text-[#9CA3AF]'}`}>{선할인카드적용 ? '적용' : '미적용'}</span>
+                  </div>
+                </FormRow>
                 <FormRow label="포인트할인"><NegativeInputField value={포인트할인입력} onChange={set포인트할인입력} /></FormRow>
               </div>
               {/* Frame 750: pad=16/12, gap=12, bg=#F8F9FA, border */}
@@ -396,7 +404,11 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                   <span className={`text-sm ${현역병사적용 ? 'text-[#111827]' : 'text-[#9CA3AF]'}`}>{현역병사적용 ? '적용' : '미적용'}</span>
                 </div>
               </FormRow>
-              <FormRow label="청구할인카드"><StaticField /></FormRow>
+              <FormRow label="청구할인카드">
+                <div onClick={() => set청구할인카드ModalOpen(true)} className="flex-1 h-11 flex items-center justify-end px-3 rounded-lg border border-input-border bg-white cursor-pointer">
+                  <span className={`text-sm ${청구할인카드적용 ? 'text-[#111827]' : 'text-[#9CA3AF]'}`}>{청구할인카드적용 ? '적용' : '미적용'}</span>
+                </div>
+              </FormRow>
               <FormRow label="프로모션"><NegativeInputField value={프로모션입력} onChange={set프로모션입력} /></FormRow>
               {/* Frame 750: pad=16/12, gap=12, bg=#F8F9FA, border-t/b only */}
               <div className="h-[116px] py-4 px-3 bg-[#F8F9FA] border-t border-b border-[#E2E8F0] flex flex-col justify-end">
@@ -698,6 +710,24 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
         onApply={() => { set현역병사적용(true); set현역병사ModalOpen(false); }}
         onReset={() => { set현역병사적용(false); set현역병사ModalOpen(false); }}
         onClose={() => set현역병사ModalOpen(false)}
+      />
+    )}
+    {/* ── 선할인카드 모달 ── */}
+    {선할인카드ModalOpen && (
+      <카드할인Modal
+        title="선할인카드"
+        onApply={() => { set선할인카드적용(true); set선할인카드ModalOpen(false); }}
+        onReset={() => { set선할인카드적용(false); set선할인카드ModalOpen(false); }}
+        onClose={() => set선할인카드ModalOpen(false)}
+      />
+    )}
+    {/* ── 청구할인카드 모달 ── */}
+    {청구할인카드ModalOpen && (
+      <카드할인Modal
+        title="청구할인카드"
+        onApply={() => { set청구할인카드적용(true); set청구할인카드ModalOpen(false); }}
+        onReset={() => { set청구할인카드적용(false); set청구할인카드ModalOpen(false); }}
+        onClose={() => set청구할인카드ModalOpen(false)}
       />
     )}
     </>
@@ -1222,6 +1252,156 @@ function 현역병사Modal({ onApply, onReset, onClose }: { onApply: () => void;
         <span className="text-[16px] text-[#6B7280]">대체 복무 요원: 병적증명서, 복무확인서, 주민등록표 초본 중 1개</span>
       </LguInfoSection>
     </LguModalShell>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 선할인카드 / 청구할인카드 공통 모달
+// ─────────────────────────────────────────────────────────────
+const 카드할인CARDS = [
+  { name: '[국민] T-economy KB국민카드', amount: '12,000원' },
+  { name: '카드명', amount: '0원' },
+  { name: '카드명', amount: '0원' },
+  { name: '카드명', amount: '0원' },
+  { name: '카드명', amount: '0원' },
+  { name: '카드명', amount: '0원' },
+  { name: '카드명', amount: '0원' },
+  { name: '카드명', amount: '0원' },
+];
+const 카드할인TIERS = [
+  { label: '30만 원 이상',  discount: '11,000원' },
+  { label: '70만 원 이상',  discount: '14,000원' },
+  { label: '120만 원 이상', discount: '17,000원' },
+];
+const CARD_INFO = { issuer: '국민카드', payment: '자동이체 필수', fee: '국내 20,000원 / 해외 20,000원', center: '전화, 온라인 발급' };
+
+function 카드할인Modal({ title, onApply, onReset, onClose }: { title: string; onApply: () => void; onReset: () => void; onClose: () => void }) {
+  const [selectedCard, setSelectedCard] = useState(0);
+  const [selectedTier, setSelectedTier] = useState(0);
+  const [phoneInput, setPhoneInput] = useState('');
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={onClose}>
+      <div className="w-[900px] bg-white rounded-xl p-6 flex flex-col gap-6" onClick={e => e.stopPropagation()}>
+        {/* 헤더 */}
+        <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0]">
+          <span className="text-[20px] font-semibold text-[#111827]">{title}</span>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center bg-transparent border-none cursor-pointer p-0">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1l12 12M13 1L1 13" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+        {/* 바디: 좌(카드 목록) + 우(상세) */}
+        <div className="flex gap-4 overflow-y-auto max-h-[500px]">
+          {/* 좌: 카드 목록 (w=252) */}
+          <div className="w-[252px] shrink-0 flex flex-col gap-2">
+            {카드할인CARDS.map((card, i) => (
+              <div
+                key={i}
+                onClick={() => setSelectedCard(i)}
+                className={`w-[240px] px-3 py-3 rounded-lg border cursor-pointer flex flex-col gap-1 ${selectedCard === i ? 'border-[#1A80FF] bg-[#E8F2FF]' : 'border-[#E2E8F0] bg-white'}`}
+              >
+                <span className={`text-[14px] ${i === 0 ? 'font-medium' : 'font-normal'} text-[#111827]`}>{card.name}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-[14px] font-medium text-[#111827]">월</span>
+                  <span className="text-[14px] font-medium text-[#111827]">{card.amount}</span>
+                  <span className="text-[14px] font-medium text-[#111827]">~</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* 우: 상세 패널 */}
+          <div className="flex-1 flex flex-col gap-5">
+            {/* 카드 상세 정보 */}
+            <div className="flex gap-4">
+              <div className="w-[216px] h-[136px] bg-[#F3F4F6] rounded-lg shrink-0" />
+              <div className="flex flex-col gap-3">
+                <span className="text-[18px] font-semibold text-[#111827]">{카드할인CARDS[selectedCard].name.replace(/^\[.*?\]\s*/, '')}</span>
+                <div className="flex flex-col gap-2">
+                  {[
+                    ['카드사',   CARD_INFO.issuer],
+                    ['결제구분', CARD_INFO.payment],
+                    ['연회비',   CARD_INFO.fee],
+                    ['발급센터', CARD_INFO.center],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex gap-3">
+                      <span className="text-[14px] text-[#9CA3AF] w-[52px] shrink-0">{label}</span>
+                      <span className="text-[14px] text-[#111827]">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* 전월 실적 구간 선택 */}
+            <div className="flex flex-col gap-3">
+              <span className="text-[16px] font-medium text-[#111827]">전월 실적 구간 선택</span>
+              <div className="flex flex-col gap-1">
+                {카드할인TIERS.map((tier, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setSelectedTier(i)}
+                    className={`flex items-center justify-between h-[52px] px-3 rounded-lg border cursor-pointer ${selectedTier === i ? 'border-[#1A80FF] bg-[#E8F2FF]' : 'border-[#E2E8F0] bg-white'}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${selectedTier === i ? 'border-[#1A80FF]' : 'border-[#9CA3AF]'}`}>
+                        {selectedTier === i && <div className="w-[6px] h-[6px] rounded-full bg-[#1A80FF]" />}
+                      </div>
+                      <span className="text-[14px] text-[#111827]">{tier.label}</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <span className="text-[14px] font-medium text-[#111827]">{tier.discount}</span>
+                      <span className="text-[14px] font-medium text-[#111827]">할인</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* 카드 신청 방법 */}
+            <div className="flex flex-col gap-3">
+              <span className="text-[16px] font-medium text-[#111827]">카드 신청 방법</span>
+              {/* 링크 전송 */}
+              <div className="flex items-center gap-2 border border-[#E2E8F0] rounded-lg px-3 h-[40px]">
+                <span className="text-[14px] text-[#111827] shrink-0">카드 신청 링크 전송</span>
+                <input
+                  className="flex-1 text-[14px] text-[#9CA3AF] outline-none border-none bg-transparent"
+                  placeholder="-없이 숫자만 입력해 주세요"
+                  value={phoneInput}
+                  onChange={e => setPhoneInput(e.target.value)}
+                />
+                <button className="w-[100px] h-[32px] bg-[#1A80FF] text-white text-[14px] rounded-lg border-none cursor-pointer shrink-0">전송</button>
+              </div>
+              {/* 연락 방법 */}
+              <div className="flex items-center border border-[#E2E8F0] rounded-lg overflow-hidden">
+                <div className="flex flex-col items-center gap-2 px-6 py-4">
+                  <span className="text-[14px] text-[#111827]">전화</span>
+                  <span className="text-[16px] font-medium text-[#111827]">1577-1234</span>
+                </div>
+                <div className="w-px self-stretch bg-[#E2E8F0]" />
+                <div className="flex flex-col items-center gap-2 px-6 py-4">
+                  <span className="text-[14px] text-[#111827]">온라인 신청</span>
+                  <span className="text-[16px] font-medium text-[#1A80FF] cursor-pointer">바로가기</span>
+                </div>
+                <div className="w-px self-stretch bg-[#E2E8F0]" />
+                <div className="flex flex-col items-center gap-2 px-6 py-4">
+                  <span className="text-[14px] text-[#111827]">온라인 신청</span>
+                  <div className="w-[60px] h-[60px] bg-[#F3F4F6] rounded" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* 버튼 */}
+        <div className="flex justify-center gap-5">
+          <button onClick={onReset} className="w-[200px] h-[52px] bg-[#F8F9FA] text-[#9CA3AF] text-[16px] font-medium rounded-lg border-none cursor-pointer">
+            미적용
+          </button>
+          <button onClick={onApply} className="w-[200px] h-[52px] bg-[#1A80FF] text-white text-[16px] font-medium rounded-lg border-none cursor-pointer">
+            적용
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

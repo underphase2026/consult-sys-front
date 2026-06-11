@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, ReactNode, Fragment } from 'react';
 import { ConsultingStep } from '../contexts/ConsultingTabsContext';
 import Iphone17eImg from '../images/Iphone17e.svg';
+import KBCardImg    from '../images/KB Card.svg';
+import QRCardImg    from '../images/qr-card.svg';
 import BadgeApplePay   from '../images/badge-applepay.svg';
 import BadgeFaceId     from '../images/badge-faceid.svg';
 import BadgeWaterproof from '../images/badge-waterproof.svg';
@@ -61,6 +63,8 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
   const [선할인카드적용, set선할인카드적용]       = useState(false);
   const [청구할인카드ModalOpen, set청구할인카드ModalOpen] = useState(false);
   const [청구할인카드적용, set청구할인카드적용]       = useState(false);
+  const [개통대기ModalOpen, set개통대기ModalOpen] = useState(false);
+  const [개통대기등록됨, set개통대기등록됨] = useState(false);
   const [보험Modal, set보험Modal]         = useState('');
   const [부가서비스List, set부가서비스List] = useState<string[]>(['']);
 
@@ -101,12 +105,32 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
   const 유통망지원금수 = parseInt(추가지원금입력) || 0;
   const 현금납부수 = parseInt(현금납부입력) || 0;
   const 할부개월수 = parseInt(할부개월) || 24;
-  const 월단말할부금수 = 할부개월수 > 0 ? Math.round((출고가수 - 포인트할인수 - 유통망지원금수 - 현금납부수) / 할부개월수) : 0;
+  const 공통지원금수 = planTab === '공통지원금' ? 500000 : 0;
+  const 할부원금 = 출고가수 - 공통지원금수 - 포인트할인수 - 유통망지원금수 - 현금납부수;
+  const 월이자율 = 0.059 / 12;
+  const 월단말할부금수 = (() => {
+    if (할부개월수 <= 0 || 할부원금 <= 0) return 0;
+    const rn = Math.pow(1 + 월이자율, 할부개월수);
+    return Math.round(할부원금 * (월이자율 * rn) / (rn - 1));
+  })();
 
   const 월기본료수 = 99000;
   const 프로모션수 = parseInt(프로모션입력) || 0;
   const 약정할인적용금액 = (약정할인적용 && planTab === '선택약정할인') ? 5250 : 0;
-  const 월요금수 = 월기본료수 - 프로모션수 - 약정할인적용금액;
+  const 가족할인금액 = 가족할인적용 ? 33000 : 0;
+  const 복지할인금액 = (() => {
+    switch (복지할인선택) {
+      case '장애인': case '국가유공자': return Math.round(월기본료수 * 0.35);
+      case '기초생활수급자 (생계/의료)': return 28650;
+      case '기초생활수급자 (주거/교육)': return 23650;
+      case '차상위계층': return 23650;
+      case '기초연금수급자(만 65세 이상)': return 12100;
+      default: return 0;
+    }
+  })();
+  const 현역병사할인기준 = 월기본료수 - 약정할인적용금액 - 복지할인금액;
+  const 현역병사할인금액 = 현역병사적용 ? Math.round(현역병사할인기준 * 0.20) : 0;
+  const 월요금수 = 현역병사할인기준 - 프로모션수 - 가족할인금액 - 현역병사할인금액;
   const 유심가격표: Record<string, number> = { '미적용': 0, '기존 유심 사용': 0, '후납': 7700, '선납': 7700, '대납': 7700, 'eSIM 후납': 2750 };
   const 유심가입비수 = 유심가격표[유심] ?? 0;
   const getInsPrice = (name: string) => { const f = MOCK_INSURANCES.find(i => i.name === name); return f ? parseInt(f.price.replace(/[^0-9]/g, '')) : 0; };
@@ -514,30 +538,61 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
 
         {/* Frame 818: 개통 진행 + 초기화 */}
         <div className="flex flex-col gap-3">
-          {/* Frame 807: 개통 진행 카드 */}
+          {/* Frame 736: 진행 상태 카드 */}
           <div className="border border-[#E2E8F0] rounded-xl overflow-hidden">
-            <div className="flex h-11 px-3 items-center gap-1 self-stretch border-b border-[#E2E8F0] bg-[#F8F9FA]">
-              <span className="text-base font-semibold text-[#111827]">개통 진행</span>
-            </div>
-            <div className="flex py-5 px-3 flex-col justify-center items-center gap-5 self-stretch border-b border-[#E2E8F0] bg-white">
-              <button className="w-full h-[52px] flex items-center justify-center px-3 bg-[#1A80FF] text-white text-base font-semibold rounded-lg border-none cursor-pointer">
-                견적서/개통안내서
-              </button>
-              <button className="w-full h-[52px] flex items-center justify-center gap-2 px-3 bg-[#E8F2FF] text-[#5AAAFF] text-base leading-6 font-semibold rounded-lg border-none cursor-pointer">
-                <svg width="17" height="17" viewBox="0 0 17 17" fill="none" className="shrink-0">
-                  <path d="M13.0007 0C13.5527 0.00025089 14.0006 0.448064 14.0008 1.00006V5.2503H14.4999C15.1627 5.2503 15.7987 5.5142 16.2675 5.98277C16.7363 6.45152 16.9999 7.0875 17 7.75045V11.4997C17 12.1627 16.7364 12.7985 16.2675 13.2674C15.7987 13.7362 15.1629 13.9998 14.4999 13.9998H14.0008V15.9999C14.0008 16.5521 13.5529 16.9997 13.0007 17H4.00023C3.44807 16.9998 3.00017 16.5521 3.00017 15.9999V13.9998H2.50014C1.83725 13.9997 1.20123 13.7361 0.732464 13.2674C0.263913 12.7986 0 12.1625 0 11.4997V7.75045C8.08583e-05 7.08754 0.263726 6.45152 0.732464 5.98277C1.20123 5.51403 1.83725 5.25041 2.50014 5.2503H3.00017V1.00006C3.00037 0.448021 3.44819 0.000181656 4.00023 0H13.0007ZM5.00029 14.9999H12.0007V13.0164C12.0006 13.0109 11.9997 13.0052 11.9997 12.9998C11.9997 12.9939 12.0006 12.988 12.0007 12.9822V11.0006H5.00029V14.9999ZM2.50014 7.25042C2.36768 7.25052 2.24027 7.30326 2.14661 7.39691C2.05296 7.49058 2.0002 7.61803 2.00011 7.75045V11.4997C2.00011 11.632 2.05314 11.7595 2.14661 11.8532C2.24027 11.9469 2.36767 11.9996 2.50014 11.9997H3.00017V10.0006C3.00024 9.44843 3.44811 9.0007 4.00023 9.00052H13.0007C13.5528 9.00077 14.0007 9.44847 14.0008 10.0006V11.9997H14.4999C14.6324 11.9997 14.7596 11.9469 14.8534 11.8532C14.9471 11.7595 14.9999 11.6322 14.9999 11.4997V7.75045C14.9998 7.618 14.9471 7.49058 14.8534 7.39691C14.7597 7.30345 14.6323 7.25042 14.4999 7.25042H2.50014ZM5.00029 5.2503H12.0007V2.00011H5.00029V5.2503Z" fill="#5AAAFF"/>
-                </svg>
-                서식지 출력
+            <div className="flex flex-col gap-5 py-5 px-3 bg-white">
+              {/* Frame 1041: 제목 + 상태 chips */}
+              <div className="flex items-center gap-2 h-10">
+                <span className="text-[16px] font-semibold text-[#111827]">진행 상태</span>
+                {/* Frame 1046: status chips */}
+                <div className="flex items-center gap-1 py-[2px]">
+                  <div className="flex items-center px-2 py-1 bg-[#1A80FF] rounded-full">
+                    <span className="text-[12px] font-medium text-white">상담</span>
+                  </div>
+                  <div className="w-3 h-px bg-[#9CA3AF]" />
+                  <div className="flex items-center px-2 py-1 bg-[#F8F9FA] rounded-full">
+                    <span className="text-[12px] text-[#6B7280]">개통 대기</span>
+                  </div>
+                  <div className="w-3 h-px bg-[#9CA3AF]" />
+                  <div className="flex items-center px-2 py-1 bg-[#F8F9FA] rounded-full">
+                    <span className="text-[12px] text-[#6B7280]">완료</span>
+                  </div>
+                </div>
+              </div>
+              {/* Frame 1047: task list */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between px-2 py-3 bg-[#F8F9FA] rounded-lg h-11">
+                  <span className="text-[14px] text-[#111827]">1. 서식지(통신사 서식) 출력</span>
+                  <div className="flex items-center">
+                    <span className="text-[12px] text-[#1A80FF]">완료</span>
+                    <div className="w-4 h-4 flex items-center justify-center">
+                      <svg width="5" height="9" viewBox="0 0 5 9" fill="none">
+                        <path d="M0.5 8.5L4.5 4.5L0.5 0.5" stroke="#9CA3AF" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between px-2 py-3 bg-[#F8F9FA] rounded-lg h-11">
+                  <span className="text-[14px] text-[#111827]">2. 개통 안내서</span>
+                  <div className="flex items-center">
+                    <span className="text-[12px] text-[#9CA3AF]">미완료</span>
+                    <div className="w-4 h-4 flex items-center justify-center">
+                      <svg width="5" height="9" viewBox="0 0 5 9" fill="none">
+                        <path d="M0.5 8.5L4.5 4.5L0.5 0.5" stroke="#9CA3AF" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Primary_Button: 개통 대기 등록 / 취소 */}
+              <button
+                onClick={() => 개통대기등록됨 ? set개통대기등록됨(false) : set개통대기ModalOpen(true)}
+                className={`w-full h-12 flex items-center justify-center text-[16px] font-medium rounded-lg border-none cursor-pointer ${개통대기등록됨 ? 'bg-[#F8F9FA] text-[#9CA3AF]' : 'bg-[#E8F2FF] text-[#5AAAFF]'}`}
+              >
+                {개통대기등록됨 ? '개통 대기 취소' : '개통 대기 등록'}
               </button>
             </div>
           </div>
-          {/* 초기화 버튼 */}
-          <button className="w-full h-11 flex items-center justify-center gap-2 px-3 bg-white border border-[#E2E8F0] rounded-lg text-base text-[#9CA3AF] cursor-pointer">
-            <svg width="18" height="16" viewBox="0 0 18 16" fill="none" className="shrink-0">
-              <path d="M5.0553 9.14257C5.34189 9.14295 5.57481 9.37543 5.57484 9.6621C5.57484 9.94879 5.3419 10.1812 5.0553 10.1816H1.74531L4.3998 12.9264L4.41096 12.9376C5.16457 13.7669 6.09308 14.3678 7.10604 14.69C8.1184 15.012 9.18708 15.047 10.2141 14.7915C11.2415 14.5357 12.1989 13.9963 12.9944 13.2187C13.7902 12.4407 14.3984 11.4492 14.757 10.3349C14.845 10.0622 15.1376 9.9115 15.4105 9.99899C15.6832 10.0868 15.8336 10.3796 15.7463 10.6525C15.3383 11.9207 14.6427 13.0603 13.721 13.9614C12.7989 14.8628 11.6796 15.4979 10.4658 15.8001C9.25132 16.1023 7.98572 16.0606 6.79046 15.6804C5.60064 15.3018 4.52321 14.6004 3.65398 13.6479V13.6489L1.03907 10.9457V14.6504C1.03896 14.9372 0.806272 15.1698 0.519533 15.17C0.232667 15.17 0.000104419 14.9373 0 14.6504V9.65398C0.000288113 9.63629 0.00299212 9.6188 0.00507357 9.60122C0.0190377 9.48211 0.071656 9.37525 0.152207 9.29477L0.158295 9.28869C0.164374 9.28282 0.171289 9.27796 0.177575 9.27245C0.196743 9.25563 0.215935 9.23864 0.237443 9.22476C0.242274 9.22165 0.247755 9.21958 0.252664 9.21664C0.277218 9.20192 0.302812 9.18865 0.329782 9.17808C0.335063 9.17602 0.340686 9.17489 0.346017 9.17301C0.371282 9.16406 0.397261 9.15668 0.42415 9.1517C0.434891 9.14971 0.445798 9.14895 0.456621 9.14764C0.477204 9.14516 0.498281 9.14257 0.519533 9.14257H5.0553ZM7.20345 0.199899C8.4177 -0.10218 9.68266 -0.0615108 10.8777 0.31862C12.0673 0.697101 13.145 1.3989 14.0142 2.35109H14.0152L16.6291 5.05226V1.34855C16.6294 1.06192 16.862 0.829139 17.1487 0.829021C17.4352 0.829259 17.6679 1.06199 17.6682 1.34855V6.33688C17.6682 6.33808 17.6672 6.33975 17.6672 6.34094C17.667 6.35968 17.6642 6.37813 17.6621 6.39675C17.6482 6.5177 17.5943 6.62514 17.5119 6.70624C17.5109 6.70724 17.5109 6.7093 17.5099 6.7103C17.5011 6.71881 17.4897 6.72486 17.4805 6.73262C17.4648 6.7458 17.45 6.7599 17.4328 6.77118C17.4165 6.78185 17.3991 6.78993 17.382 6.79858C17.3696 6.80488 17.3575 6.81153 17.3445 6.81684C17.3246 6.82497 17.3042 6.83057 17.2836 6.83612C17.2714 6.83942 17.2596 6.84386 17.2471 6.84627C17.2229 6.85093 17.1985 6.85217 17.174 6.85337C17.1656 6.85378 17.1571 6.85641 17.1487 6.85642H12.6129C12.3261 6.8563 12.0935 6.62365 12.0934 6.33688C12.0936 6.05025 12.3262 5.81747 12.6129 5.81735H15.9229L13.2684 3.07357C13.2647 3.0697 13.2608 3.06537 13.2572 3.06139C12.5037 2.23236 11.5759 1.63122 10.5632 1.30898C9.55073 0.986895 8.48119 0.952995 7.45408 1.20852C6.42684 1.4642 5.46926 2.00286 4.67377 2.78031C3.87793 3.55829 3.26984 4.55075 2.91121 5.66514C2.82321 5.93803 2.53073 6.08776 2.25774 6C1.98464 5.91211 1.83403 5.61964 1.92187 5.34652C2.32999 4.07828 3.02543 2.93866 3.94723 2.03754C4.86939 1.1362 5.98947 0.502 7.20345 0.199899Z" fill="#9CA3AF"/>
-            </svg>
-            상담 초기화
-          </button>
         </div>
 
         {/* Frame 783: 월 납부요금 정보 (344x248) */}
@@ -560,7 +615,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
               <div className="flex items-center justify-between h-5">
                 <span className="text-sm leading-5 text-[#6B7280]">월별 예상 청구 금액</span>
                 <span className="flex items-center">
-                  <span className="text-base leading-5 font-semibold text-[#EF4444]">99,000</span>
+                  <span className="text-base leading-5 font-semibold text-[#EF4444]">{(월단말할부금수 + 월요금수 + 월청구부가서비스수).toLocaleString()}</span>
                   <span className="text-sm leading-5 font-semibold text-[#EF4444]">원</span>
                 </span>
               </div>
@@ -730,6 +785,23 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
         onClose={() => set청구할인카드ModalOpen(false)}
       />
     )}
+    {/* ── 개통 대기 확인 모달 ── */}
+    {개통대기ModalOpen && (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => set개통대기ModalOpen(false)}>
+        <div className="w-[400px] bg-white rounded-xl p-5 flex flex-col items-end gap-5" onClick={e => e.stopPropagation()}>
+          {/* Frame 400: 텍스트 (self-stretch) */}
+          <div className="flex flex-col gap-1 self-stretch">
+            <span className="text-[20px] font-semibold text-[#111827]">이 상담을 개통 대기로 등록할까요?</span>
+            <span className="text-[14px] text-[#6B7280]">등록하면 개통 대기 목록으로 넘어갑니다. 고객 개통이 완료된 뒤 승인하면 자동으로 기록에 남습니다.</span>
+          </div>
+          {/* Frame 417: 버튼 오른쪽 정렬 */}
+          <div className="flex items-center gap-2">
+            <button onClick={() => set개통대기ModalOpen(false)} className="text-[14px] text-[#9CA3AF] bg-transparent border-none cursor-pointer p-0">취소</button>
+            <button onClick={() => { set개통대기등록됨(true); set개통대기ModalOpen(false); }} className="text-[14px] text-[#5AAAFF] bg-transparent border-none cursor-pointer p-0">등록</button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }
@@ -737,7 +809,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
 // ─────────────────────────────────────────────────────────────
 // 요금제 목록 데이터 (Figma 기준 컬럼)
 // ─────────────────────────────────────────────────────────────
-const PLAN_CATEGORIES = ['전체','일반','키즈','청소년(유쓰)','시니어','외국인','외국인(유쓰)','복지','LTE','태블릿/스마트워치','듀얼넘버플러스'];
+const PLAN_CATEGORIES = ['전체','일반','키즈','청소년','청년(유쓰)','시니어','외국인','외국인 청년','복지','LTE','태블릿/스마트워치','듀얼넘버'];
 const PLAN_SORT_OPTIONS = ['가격높은순','가격낮은순','이름순'];
 
 // ── 요금제 타입 (서버 API 응답 구조에 맞춰 교체 예정) ──
@@ -753,13 +825,15 @@ export interface PlanItem {
 }
 
 // TODO: 실제 서버 API 호출로 교체 — fetchPlans(carrier, category)
+// TODO: API 연동 시 아래 데이터를 서버 응답으로 교체
 const MOCK_PLANS: PlanItem[] = [
-  { id: 'skt-01', name: '5GX 프리미엄(유튜브 프리미엄)',    monthly: '79,000원',  support: '0원',       call: '무제한', sms: '무제한', addCall: '300분', data: '150GB + 데이터충전 150GB + 5Mbps' },
-  { id: 'skt-02', name: '5GX 프라임플러스(T우주)',           monthly: '99,000원',  support: '0원',       call: '무제한', sms: '무제한', addCall: '300분', data: '무제한' },
-  { id: 'skt-03', name: '5G 스탠다드',                       monthly: '69,000원',  support: '0원',       call: '무제한', sms: '무제한', addCall: '300분', data: '100GB + 데이터충전 100GB + 3Mbps' },
-  { id: 'skt-04', name: '유튜브 프리미엄 플러스 플랜 105',  monthly: '125,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
-  { id: 'skt-05', name: '5GX 프리미엄(T우주)',               monthly: '89,000원',  support: '0원',       call: '무제한', sms: '무제한', addCall: '300분', data: '200GB + 데이터충전 200GB + 5Mbps' },
-  { id: 'skt-06', name: '5G 베이직',                         monthly: '55,000원',  support: '0원',       call: '무제한', sms: '무제한', addCall: '200분', data: '12GB + 데이터충전 12GB + 1Mbps' },
+  { id: 'plan-01', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
+  { id: 'plan-02', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
+  { id: 'plan-03', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
+  { id: 'plan-04', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
+  { id: 'plan-05', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
+  { id: 'plan-06', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
+  { id: 'plan-07', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
 ];
 
 function PlanSelectModal({
@@ -787,11 +861,14 @@ function PlanSelectModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="w-[900px] bg-white rounded-xl p-7 flex flex-col gap-5" onClick={e => e.stopPropagation()}>
-
-        {/* 헤더 */}
-        <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-4">
-          <span className="text-xl font-semibold text-[#111827]">요금제 선택</span>
+      <div
+        className="w-[900px] h-[720px] bg-white rounded-2xl py-7 px-6 flex flex-col"
+        style={{ boxShadow: '-1px 0 4px 0 rgba(0,0,0,0.10), 1px 0 4px 0 rgba(0,0,0,0.10), 0 2px 4px 0 rgba(0,0,0,0.15)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* 헤더 (Frame 832) h=40 */}
+        <div className="w-full h-10 shrink-0 flex items-center justify-between border-b border-[#E2E8F0]">
+          <span className="text-[20px] font-semibold text-[#111827]">요금제 선택</span>
           <button onClick={onClose} className="w-7 h-7 flex items-center justify-center bg-transparent border-none cursor-pointer p-0">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M1 1l12 12M13 1L1 13" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round"/>
@@ -799,87 +876,98 @@ function PlanSelectModal({
           </button>
         </div>
 
-        {/* 검색 + 정렬 */}
-        <div className="flex gap-4">
-          <div className="flex-1 h-11 flex items-center gap-2 px-3 border border-[#E2E8F0] rounded-lg bg-white">
-            <input
-              type="text"
-              placeholder="요금제 검색"
-              value={search}
-              onChange={e => onSearch(e.target.value)}
-              className="flex-1 bg-transparent border-none outline-none text-[14px] text-[#111827] placeholder:text-[#9CA3AF]"
-            />
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" className="shrink-0">
-              <circle cx="5.5" cy="5.5" r="4.5" stroke="#9CA3AF" strokeWidth="1.3"/>
-              <path d="M9 9l3 3" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round"/>
-            </svg>
+        {/* 본문 (Frame 952): pt=20 gap=20 flex-1 */}
+        <div className="flex flex-col gap-5 pt-5 flex-1 w-full min-h-0">
+
+          {/* 카테고리 탭 (Frame 1004) h=44 */}
+          <div className="w-full flex shrink-0 border-b border-[#E2E8F0]">
+            {PLAN_CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                onClick={() => onCategory(cat)}
+                className={`h-11 px-3 shrink-0 text-[14px] font-medium cursor-pointer whitespace-nowrap bg-white ${category === cat ? 'text-[#111827]' : 'text-[#6B7280]'}`}
+                style={{ border: 'none', borderBottom: category === cat ? '2px solid #1A80FF' : '2px solid transparent' }}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
-          <div ref={sortRef} className="relative w-[236px]">
-            <button
-              onClick={() => setSortOpen(!sortOpen)}
-              className="w-full h-11 flex items-center justify-between px-3 border border-[#E2E8F0] rounded-lg bg-white cursor-pointer border-none"
-              style={{ border: '1px solid #E2E8F0' }}
-            >
-              <span className="text-[14px] text-[#9CA3AF]">{sortLabel}</span>
-              <svg width="8" height="4" viewBox="0 0 8 4" fill="none"><path d="M1 1l3 2 3-2" stroke="#9CA3AF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            {sortOpen && (
-              <div className="absolute top-full left-0 mt-1 w-full bg-white border border-[#E2E8F0] rounded-lg shadow-md z-10 overflow-hidden">
-                {PLAN_SORT_OPTIONS.map(opt => (
-                  <button key={opt} onClick={() => { onSort(opt); setSortOpen(false); }} className={`w-full px-3 py-2.5 text-left text-[14px] border-none cursor-pointer ${sortLabel === opt ? 'bg-[#E8F2FF] text-[#111827]' : 'bg-white text-[#111827]'}`}>{opt}</button>
-                ))}
+
+          {/* 정렬 + 검색 (Frame 1015) h=44 */}
+          <div className="w-full flex items-center justify-between shrink-0">
+            <div ref={sortRef} className="relative w-[140px]">
+              <button
+                onClick={() => setSortOpen(!sortOpen)}
+                className="w-full h-11 flex items-center justify-between pl-3 pr-2 border border-[#E2E8F0] rounded-lg bg-white cursor-pointer"
+              >
+                <span className="text-[14px] text-[#111827]">{sortLabel}</span>
+                <svg width="8" height="4" viewBox="0 0 8 4" fill="none"><path d="M1 1l3 2 3-2" stroke="#9CA3AF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              {sortOpen && (
+                <div className="absolute top-full left-0 mt-1 w-full bg-white border border-[#E2E8F0] rounded-lg shadow-md z-10 overflow-hidden">
+                  {PLAN_SORT_OPTIONS.map(opt => (
+                    <button key={opt} onClick={() => { onSort(opt); setSortOpen(false); }} className={`w-full px-3 py-2.5 text-left text-[14px] border-none cursor-pointer ${sortLabel === opt ? 'bg-[#E8F2FF] text-[#111827]' : 'bg-white text-[#111827]'}`}>{opt}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="w-[240px] h-11 flex items-center justify-between pl-3 pr-2 border border-[#E2E8F0] rounded-lg bg-white">
+              <input
+                type="text"
+                placeholder="검색"
+                value={search}
+                onChange={e => onSearch(e.target.value)}
+                className="flex-1 bg-transparent border-none outline-none text-[14px] text-[#111827] placeholder:text-[#9CA3AF]"
+              />
+              <div className="w-6 h-6 flex items-center justify-center">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <circle cx="5.5" cy="5.5" r="4.5" stroke="#9CA3AF" strokeWidth="1.3"/>
+                  <path d="M9 9l3 3" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round"/>
+                </svg>
               </div>
-            )}
+            </div>
           </div>
-        </div>
 
-        {/* 카테고리 탭 */}
-        <div className="flex bg-[#F8F9FA] overflow-x-auto">
-          {PLAN_CATEGORIES.map(cat => (
-            <button
-              key={cat}
-              onClick={() => onCategory(cat)}
-              className={`h-11 px-3 shrink-0 text-[14px] font-medium border-none cursor-pointer whitespace-nowrap
-                ${category === cat ? 'bg-primary text-white' : 'bg-transparent text-[#111827]'}`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* 테이블 헤더 — Figma Frame 835 기준 컬럼 너비 */}
-        <div className="flex items-center h-12 px-5 bg-[#F8F9FA] border border-[#E2E8F0] rounded-lg">
-          <span className="w-[200px] shrink-0 text-[14px] text-[#9CA3AF]">요금제명</span>
-          <span className="w-[68px] shrink-0 text-[14px] text-[#9CA3AF]">월정액</span>
-          <span className="w-[78px] shrink-0 text-[14px] text-[#9CA3AF]">이통사지원금</span>
-          <span className="w-[52px] shrink-0 text-[14px] text-[#9CA3AF]">통화</span>
-          <span className="w-[52px] shrink-0 text-[14px] text-[#9CA3AF]">문자</span>
-          <span className="w-[52px] shrink-0 text-[14px] text-[#9CA3AF]">부가통화</span>
-          <span className="flex-1 text-[14px] text-[#9CA3AF]">데이터</span>
-          <span className="w-6 shrink-0" />
-        </div>
-
-        {/* 요금제 목록 — API 연동 시 filtered → server 응답 데이터로 교체 */}
-        <div className="flex flex-col max-h-[320px] overflow-y-auto border border-[#E2E8F0] rounded-lg">
-          {filtered.map(plan => (
-            <div
-              key={plan.id}
-              onClick={() => onSelect(plan.name)}
-              className={`flex items-center min-h-[64px] px-5 cursor-pointer border-b border-[#E2E8F0] last:border-b-0
-                ${selectedPlan === plan.name ? 'bg-[#E8F2FF]' : 'bg-white'}`}
-            >
-              <span className="w-[200px] shrink-0 text-[14px] font-medium text-[#111827] truncate">{plan.name}</span>
-              <span className="w-[68px] shrink-0 text-[14px] text-[#6B7280]">{plan.monthly}</span>
-              <span className="w-[78px] shrink-0 text-[14px] text-[#6B7280]">{plan.support}</span>
-              <span className="w-[52px] shrink-0 text-[14px] text-[#6B7280]">{plan.call}</span>
-              <span className="w-[52px] shrink-0 text-[14px] text-[#6B7280]">{plan.sms}</span>
-              <span className="w-[52px] shrink-0 text-[14px] text-[#6B7280]">{plan.addCall}</span>
-              <span className="flex-1 text-[14px] text-[#6B7280] break-words">{plan.data}</span>
+          {/* 테이블 (Frame 1016) flex-1 */}
+          <div className="flex-1 border border-[#E2E8F0] flex flex-col min-h-0">
+            {/* 헤더행 (Frame 1017) h=48 */}
+            <div className="w-full h-12 shrink-0 flex items-center justify-between pl-3 pr-3 bg-[#F8F9FA] border-b border-[#E2E8F0]">
+              <span className="w-[200px] shrink-0 text-[14px] text-[#9CA3AF]">요금제명</span>
+              <span className="w-[52px] shrink-0 text-[14px] text-[#9CA3AF] text-center">통화</span>
+              <span className="w-[52px] shrink-0 text-[14px] text-[#9CA3AF] text-center">문자</span>
+              <span className="w-[52px] shrink-0 text-[14px] text-[#9CA3AF] text-center">부가통화</span>
+              <span className="w-[148px] shrink-0 text-[14px] text-[#9CA3AF] text-center">데이터</span>
+              <span className="w-[80px] shrink-0 text-[14px] text-[#9CA3AF] text-center">월정액</span>
+              <span className="w-[80px] shrink-0 text-[14px] text-[#9CA3AF] text-center">이통사지원금</span>
               <span className="w-6 shrink-0" />
             </div>
-          ))}
-        </div>
+            {/* 데이터행 (Frame 1018) overflow-y-auto */}
+            <div className="flex-1 overflow-y-auto">
+              {filtered.map(plan => (
+                <div
+                  key={plan.id}
+                  onClick={() => onSelect(plan.name)}
+                  className={`w-full flex items-center justify-between min-h-[64px] pl-3 pr-3 cursor-pointer border-b border-[#E2E8F0] last:border-b-0
+                    ${selectedPlan === plan.name ? 'bg-[#E8F2FF]' : 'bg-white'}`}
+                >
+                  <span className="w-[200px] shrink-0 text-[14px] font-medium text-[#111827]">{plan.name}</span>
+                  <span className="w-[52px] shrink-0 text-[14px] text-[#6B7280] text-center">{plan.call}</span>
+                  <span className="w-[52px] shrink-0 text-[14px] text-[#6B7280] text-center">{plan.sms}</span>
+                  <span className="w-[52px] shrink-0 text-[14px] text-[#6B7280] text-center">{plan.addCall}</span>
+                  <span className="w-[148px] shrink-0 text-[14px] text-[#6B7280] text-center break-words">{plan.data}</span>
+                  <span className="w-[80px] shrink-0 text-[14px] text-[#6B7280] text-center">{plan.monthly}</span>
+                  <span className="w-[80px] shrink-0 text-[14px] text-[#6B7280] text-center">{plan.support}</span>
+                  <div className="w-6 h-6 shrink-0 flex items-center justify-center">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M12.001 4.5C12.1476 4.50006 12.2906 4.54105 12.4131 4.61719C12.5355 4.69326 12.6319 4.8011 12.6924 4.92676L12.6963 4.93555L14.625 8.75098L14.7549 9.00977L15.042 9.05273L19.2881 9.66992L19.3125 9.67285C19.4598 9.68705 19.5984 9.74252 19.7129 9.83105C19.8273 9.91953 19.9124 10.0368 19.959 10.1689C20.0055 10.3011 20.013 10.4435 19.9795 10.5791C19.946 10.7147 19.8725 10.8392 19.7676 10.9375L16.6777 13.8623L16.6523 13.8848C16.5851 13.9478 16.5346 14.0276 16.5068 14.1172L16.4922 14.3711L17.2324 18.6221C17.2576 18.7603 17.2418 18.9005 17.1885 19.0293C17.1351 19.1583 17.0452 19.2711 16.9277 19.3545C16.8102 19.4379 16.6701 19.4882 16.5234 19.498C16.377 19.5078 16.231 19.4773 16.1025 19.4102L12.2744 17.4277L12.001 17.3623C11.9186 17.3623 11.8368 17.3796 11.7607 17.4121L7.90137 19.4102C7.77254 19.477 7.6261 19.5082 7.47949 19.498C7.33299 19.4879 7.19351 19.437 7.07617 19.3535C6.95885 19.2701 6.86884 19.1572 6.81543 19.0283C6.7622 18.8998 6.74647 18.7585 6.77051 18.6221L7.51953 14.3301L7.34668 13.8818L4.23535 10.9404C4.09368 10.7775 4.04679 10.6818 4.02148 10.5801C3.98782 10.4444 3.99445 10.3012 4.04102 10.1689C4.08765 10.0368 4.17264 9.91855 4.28711 9.83008C4.40175 9.74158 4.54109 9.68688 4.68848 9.67285L8.98438 9.04883L9.24707 9.00977L9.37695 8.75098L11.3057 4.93555C11.37 4.8012 11.4666 4.69325 11.5889 4.61719C11.7114 4.54105 11.8544 4.50006 12.001 4.5Z" fill="white" stroke="#E2E8F0"/>
+                    </svg>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
+        </div>
       </div>
     </div>
   );
@@ -1292,17 +1380,19 @@ function 카드할인Modal({ title, onApply, onReset, onClose }: { title: string
             </svg>
           </button>
         </div>
-        {/* 바디: 좌(카드 목록) + 우(상세) */}
+        {/* 바디: 좌(카드 목록 w=252) + 우(상세) */}
         <div className="flex gap-4 overflow-y-auto max-h-[500px]">
-          {/* 좌: 카드 목록 (w=252) */}
-          <div className="w-[252px] shrink-0 flex flex-col gap-2">
+          {/* 좌: Frame 954 — 카드 목록 */}
+          <div className="w-[252px] shrink-0 flex flex-col">
             {카드할인CARDS.map((card, i) => (
               <div
                 key={i}
                 onClick={() => setSelectedCard(i)}
-                className={`w-[240px] px-3 py-3 rounded-lg border cursor-pointer flex flex-col gap-1 ${selectedCard === i ? 'border-[#1A80FF] bg-[#E8F2FF]' : 'border-[#E2E8F0] bg-white'}`}
+                className={`w-[240px] px-3 pt-4 pb-4 flex flex-col gap-3 cursor-pointer border-b border-[#E2E8F0] last:border-b-0 ${selectedCard === i ? 'bg-[#E8F2FF]' : 'bg-white'}`}
               >
-                <span className={`text-[14px] ${i === 0 ? 'font-medium' : 'font-normal'} text-[#111827]`}>{card.name}</span>
+                {/* Frame 956: 카드명 */}
+                <span className={`text-[14px] leading-[1.4] ${i === 0 ? 'font-medium' : 'font-normal'} text-[#111827]`}>{card.name}</span>
+                {/* Frame 877: 월 금액 ~ */}
                 <div className="flex items-center gap-1">
                   <span className="text-[14px] font-medium text-[#111827]">월</span>
                   <span className="text-[14px] font-medium text-[#111827]">{card.amount}</span>
@@ -1311,32 +1401,37 @@ function 카드할인Modal({ title, onApply, onReset, onClose }: { title: string
               </div>
             ))}
           </div>
-          {/* 우: 상세 패널 */}
+          {/* 우: Frame 955 — 상세 패널 */}
           <div className="flex-1 flex flex-col gap-5">
-            {/* 카드 상세 정보 */}
-            <div className="flex gap-4">
-              <div className="w-[216px] h-[136px] bg-[#F3F4F6] rounded-lg shrink-0" />
-              <div className="flex flex-col gap-3">
-                <span className="text-[18px] font-semibold text-[#111827]">{카드할인CARDS[selectedCard].name.replace(/^\[.*?\]\s*/, '')}</span>
-                <div className="flex flex-col gap-2">
+            {/* Frame 963: 카드 이미지 + 상세정보 (gap=20) */}
+            <div className="flex items-center gap-5">
+              {/* Rectangle 684: KB 카드 이미지 (216×136) */}
+              <img src={KBCardImg} alt="KB 카드" className="w-[216px] h-[136px] shrink-0 object-contain" />
+              {/* Frame 962: 카드명 + 상세 (VERTICAL, pt=4 pb=4 gap=12) */}
+              <div className="flex flex-col gap-3 py-1">
+                <span className="text-[18px] font-semibold text-[#111827]">
+                  {카드할인CARDS[selectedCard].name.replace(/^\[.*?\]\s*/, '')}
+                </span>
+                {/* Frame 964: 4개 정보 행 (VERTICAL pl=12 pr=12 gap=4) */}
+                <div className="flex flex-col gap-1 pl-3 pr-3">
                   {[
                     ['카드사',   CARD_INFO.issuer],
                     ['결제구분', CARD_INFO.payment],
                     ['연회비',   CARD_INFO.fee],
                     ['발급센터', CARD_INFO.center],
                   ].map(([label, value]) => (
-                    <div key={label} className="flex gap-3">
-                      <span className="text-[14px] text-[#9CA3AF] w-[52px] shrink-0">{label}</span>
-                      <span className="text-[14px] text-[#111827]">{value}</span>
+                    <div key={label} className="flex items-center gap-2 h-5">
+                      <span className="text-[14px] text-[#111827] w-[52px] shrink-0">{label}</span>
+                      <span className="text-[14px] text-[#6B7280]">{value}</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-            {/* 전월 실적 구간 선택 */}
+            {/* Frame 859: 전월 실적 구간 선택 */}
             <div className="flex flex-col gap-3">
               <span className="text-[16px] font-medium text-[#111827]">전월 실적 구간 선택</span>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-2">
                 {카드할인TIERS.map((tier, i) => (
                   <div
                     key={i}
@@ -1344,6 +1439,7 @@ function 카드할인Modal({ title, onApply, onReset, onClose }: { title: string
                     className={`flex items-center justify-between h-[52px] px-3 rounded-lg border cursor-pointer ${selectedTier === i ? 'border-[#1A80FF] bg-[#E8F2FF]' : 'border-[#E2E8F0] bg-white'}`}
                   >
                     <div className="flex items-center gap-2">
+                      {/* radio circle */}
                       <div className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${selectedTier === i ? 'border-[#1A80FF]' : 'border-[#9CA3AF]'}`}>
                         {selectedTier === i && <div className="w-[6px] h-[6px] rounded-full bg-[#1A80FF]" />}
                       </div>
@@ -1357,35 +1453,78 @@ function 카드할인Modal({ title, onApply, onReset, onClose }: { title: string
                 ))}
               </div>
             </div>
-            {/* 카드 신청 방법 */}
+            {/* Frame 985: 카드 신청 방법 */}
             <div className="flex flex-col gap-3">
               <span className="text-[16px] font-medium text-[#111827]">카드 신청 방법</span>
-              {/* 링크 전송 */}
-              <div className="flex items-center gap-2 border border-[#E2E8F0] rounded-lg px-3 h-[40px]">
-                <span className="text-[14px] text-[#111827] shrink-0">카드 신청 링크 전송</span>
-                <input
-                  className="flex-1 text-[14px] text-[#9CA3AF] outline-none border-none bg-transparent"
-                  placeholder="-없이 숫자만 입력해 주세요"
-                  value={phoneInput}
-                  onChange={e => setPhoneInput(e.target.value)}
-                />
-                <button className="w-[100px] h-[32px] bg-[#1A80FF] text-white text-[14px] rounded-lg border-none cursor-pointer shrink-0">전송</button>
-              </div>
-              {/* 연락 방법 */}
-              <div className="flex items-center border border-[#E2E8F0] rounded-lg overflow-hidden">
-                <div className="flex flex-col items-center gap-2 px-6 py-4">
-                  <span className="text-[14px] text-[#111827]">전화</span>
-                  <span className="text-[16px] font-medium text-[#111827]">1577-1234</span>
+              {/* Frame 988 (VERTICAL gap=8) */}
+              <div className="flex flex-col gap-2">
+                {/* Frame 972: 링크 전송 행 (h=56 bg=#F8F9FA, px=12 py=8) */}
+                <div className="h-[56px] bg-[#F8F9FA] flex items-center px-3">
+                  {/* Frame 986 (HORIZONTAL gap=8 CENTER) */}
+                  <div className="flex items-center gap-2 w-full">
+                    <span className="text-[14px] text-[#6B7280] shrink-0">카드 신청 링크 전송</span>
+                    {/* Frame 720: input (w=332 h=40 bg=white) */}
+                    <div className="flex-1 h-[40px] bg-white flex items-center px-3">
+                      <input
+                        className="w-full text-[14px] text-[#9CA3AF] outline-none border-none bg-transparent"
+                        placeholder="-없이 숫자만 입력해 주세요"
+                        value={phoneInput}
+                        onChange={e => setPhoneInput(e.target.value)}
+                      />
+                    </div>
+                    {/* Frame 721: 전송 버튼 (w=100 h=40 bg=#E8F2FF) */}
+                    <button className="w-[100px] h-[40px] bg-[#E8F2FF] text-[#5AAAFF] text-[14px] rounded-lg border-none cursor-pointer shrink-0">전송</button>
+                  </div>
                 </div>
-                <div className="w-px self-stretch bg-[#E2E8F0]" />
-                <div className="flex flex-col items-center gap-2 px-6 py-4">
-                  <span className="text-[14px] text-[#111827]">온라인 신청</span>
-                  <span className="text-[16px] font-medium text-[#1A80FF] cursor-pointer">바로가기</span>
-                </div>
-                <div className="w-px self-stretch bg-[#E2E8F0]" />
-                <div className="flex flex-col items-center gap-2 px-6 py-4">
-                  <span className="text-[14px] text-[#111827]">온라인 신청</span>
-                  <div className="w-[60px] h-[60px] bg-[#F3F4F6] rounded" />
+                {/* Frame 971: 연락 방법 (HORIZONTAL SPACE_BETWEEN px=60 py=24) */}
+                <div className="flex items-center justify-between px-[60px] py-6 bg-white">
+                  {/* Frame 976: 전화 (VERTICAL CENTER gap=4) */}
+                  <div className="flex flex-col items-center gap-1">
+                    {/* Frame 975 (VERTICAL CENTER gap=4) */}
+                    <div className="flex flex-col items-center gap-1">
+                      {/* Frame 972 (40×40 bg=#F8F9FA rounded) */}
+                      <div className="w-10 h-10 bg-[#F8F9FA] rounded-lg flex items-center justify-center">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                          <path d="M18.9994 14.4765V17.1862C19.0005 17.4377 18.9488 17.6867 18.8479 17.9172C18.7469 18.1477 18.5988 18.3546 18.4131 18.5247C18.2273 18.6947 18.008 18.8242 17.7693 18.9048C17.5305 18.9854 17.2775 19.0153 17.0265 18.9927C14.2415 18.6907 11.5664 17.7409 9.21601 16.2197C7.02929 14.8329 5.17534 12.9827 3.7858 10.8003C2.25627 8.44389 1.30442 5.76107 1.00735 2.96915C0.98473 2.71938 1.01447 2.46764 1.09468 2.22996C1.17489 1.99229 1.30381 1.77389 1.47323 1.58866C1.64265 1.40343 1.84885 1.25544 2.07872 1.15411C2.30858 1.05278 2.55707 1.00032 2.80837 1.00009H5.52347C5.96269 0.995773 6.3885 1.151 6.72152 1.43683C7.05455 1.72267 7.27207 2.11961 7.33354 2.55366C7.44814 3.42084 7.66067 4.27229 7.96707 5.09177C8.08883 5.41507 8.11519 5.76642 8.043 6.1042C7.97082 6.44198 7.80313 6.75203 7.5598 6.99761L6.41041 8.14473C7.69877 10.406 9.57482 12.2784 11.8406 13.5642L12.99 12.4171C13.2361 12.1742 13.5467 12.0069 13.8852 11.9348C14.2236 11.8628 14.5757 11.8891 14.8996 12.0106C15.7207 12.3164 16.5739 12.5285 17.4428 12.6429C17.8824 12.7048 18.2839 12.9258 18.5709 13.2638C18.858 13.6019 19.0105 14.0335 18.9994 14.4765Z" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      <span className="text-[14px] font-medium text-[#6B7280]">전화</span>
+                    </div>
+                    <span className="text-[16px] font-medium text-[#111827]">1577-1234</span>
+                  </div>
+                  {/* 구분선 Rectangle 686 (w=1 h=100) */}
+                  <div className="w-px h-[100px] bg-[#E2E8F0]" />
+                  {/* Frame 981: 온라인 신청+바로가기 (VERTICAL CENTER gap=4) */}
+                  <div className="flex flex-col items-center gap-1">
+                    {/* Frame 974 (VERTICAL CENTER gap=4) */}
+                    <div className="flex flex-col items-center gap-1">
+                      {/* Frame 972 (40×40 bg=#F8F9FA rounded) */}
+                      <div className="w-10 h-10 bg-[#F8F9FA] rounded-lg flex items-center justify-center">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                          <path d="M8.99951 0C13.9699 0 17.9998 4.02919 18 8.99951C17.9998 13.9698 13.9699 18 8.99951 18L8.99756 17.999V18L8.9956 17.999C4.0272 17.9967 0.00020388 13.9684 0 8.99951C0.000186601 4.0293 4.0293 0.000186605 8.99951 0ZM13.1379 9.99772C12.9479 11.9957 12.3069 13.9162 11.2714 15.6197C13.718 14.7802 15.552 12.6251 15.9274 9.99772H13.1379ZM2.0726 9.99772C2.44766 12.6229 4.27846 14.7768 6.7218 15.6178C5.68709 13.9148 5.04715 11.9947 4.85724 9.99772H2.0726ZM6.86733 9.99772C7.08828 11.9627 7.82319 13.8343 8.99756 15.4234C10.172 13.8343 10.9069 11.9627 11.1278 9.99772H6.86733ZM11.2714 2.37832C12.3063 4.08094 12.9465 6.00064 13.1369 7.9974H15.9264C15.5498 5.37154 13.717 3.2172 11.2714 2.37832ZM8.99756 2.57561C7.82388 4.16367 7.08973 6.03372 6.86831 7.9974H11.1268C10.9054 6.0337 10.1713 4.1637 8.99756 2.57561ZM6.7218 2.38125C4.27954 3.22172 2.44979 5.37387 2.07358 7.9974H4.85821C5.04855 6.00182 5.68791 4.08312 6.7218 2.38125Z" fill="#9CA3AF"/>
+                        </svg>
+                      </div>
+                      <span className="text-[14px] font-medium text-[#6B7280]">온라인 신청</span>
+                    </div>
+                    {/* Frame 980 (HORIZONTAL CENTER gap=0) */}
+                    <div className="flex items-center justify-center">
+                      <span className="text-[16px] font-medium text-[#111827]">바로가기</span>
+                      {/* Frame 979 (20×20) with arrow icon */}
+                      <div className="w-5 h-5 flex items-center justify-center">
+                        <svg width="13" height="12" viewBox="0 0 13 12" fill="none">
+                          <path d="M0.292817 11.7072C-0.0976278 11.3167 -0.0975836 10.6837 0.292817 10.2932L8.58609 1.99996L1.25856 1.99996C0.706464 1.99997 0.258875 1.55209 0.25864 1.00005C0.258686 0.447846 0.706347 0.000127751 1.25856 0.000127727L11.0009 0.000127301C11.5531 0.000172096 12.0008 0.447873 12.0008 1.00005V10.7414C12.0008 11.2937 11.5531 11.7413 11.0009 11.7414C10.4487 11.7413 10.001 11.2937 10.001 10.7414V3.41391L1.70676 11.7072C1.31626 12.0976 0.683272 12.0976 0.292817 11.7072Z" fill="#E8F2FF"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  {/* 구분선 Rectangle 687 (w=1 h=100) */}
+                  <div className="w-px h-[100px] bg-[#E2E8F0]" />
+                  {/* Frame 982: QR 온라인신청 (VERTICAL SPACE_BETWEEN CENTER) */}
+                  <div className="flex flex-col items-center justify-between h-[88px]">
+                    <span className="text-[14px] font-medium text-[#6B7280]">온라인 신청</span>
+                    {/* Rectangle 685 (60×60 QR) */}
+                    <img src={QRCardImg} alt="QR" className="w-[60px] h-[60px]" />
+                  </div>
                 </div>
               </div>
             </div>

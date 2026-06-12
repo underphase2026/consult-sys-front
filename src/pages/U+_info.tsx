@@ -77,12 +77,18 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
 
   // 요금제 선택 모달
   const [planModalOpen, setPlanModalOpen]   = useState(false);
-  const [selectedPlan, setSelectedPlan]     = useState('5GX 프리미엄(유튜브 프리미엄)');
+  const [selectedPlan, setSelectedPlan]     = useState('');
   const [planSearch, setPlanSearch]         = useState('');
   const [planCategory, setPlanCategory]     = useState('전체');
   const [planSortOpen, setPlanSortOpen]     = useState(false);
-  const [planSort, setPlanSort]             = useState('가격높은순');
+  const [planSort, setPlanSort]             = useState('높은 가격 순');
   const planSortRef                         = useRef<HTMLDivElement>(null);
+  const [planFavorites, setPlanFavorites]   = useState<Set<string>>(new Set());
+  const togglePlanFavorite = (id: string) => setPlanFavorites(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
   useEffect(() => {
     const h = (e: MouseEvent) => { if (planSortRef.current && !planSortRef.current.contains(e.target as Node)) setPlanSortOpen(false); };
@@ -100,41 +106,75 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
   const carrierLabel = CARRIER_LABELS[carrier] ?? carrier.toUpperCase();
   void carrierLabel;
 
-  const 출고가수 = 1250000;
-  const 포인트할인수 = parseInt(포인트할인입력) || 0;
-  const 유통망지원금수 = parseInt(추가지원금입력) || 0;
-  const 현금납부수 = parseInt(현금납부입력) || 0;
-  const 할부개월수 = parseInt(할부개월) || 24;
-  const 공통지원금수 = planTab === '공통지원금' ? 500000 : 0;
-  const 할부원금 = 출고가수 - 공통지원금수 - 포인트할인수 - 유통망지원금수 - 현금납부수;
+  // ─── 1단계: 단말기 할부 계산 ───────────────────────────────────────────────
+  const 출고가수       = 1250000;                                // TODO: API로 교체
+  const 포인트할인수   = parseInt(포인트할인입력)  || 0;
+  const 유통망지원금수 = parseInt(추가지원금입력)  || 0;
+  const 현금납부수     = parseInt(현금납부입력)    || 0;
+  const 할부개월수     = parseInt(할부개월)        || 24;
+  const 공통지원금수   = planTab === '공통지원금' ? 500000 : 0; // TODO: API로 교체
+
+  const 할부원금 = Math.max(0, 출고가수 - (공통지원금수 + 유통망지원금수 + 현금납부수 + 포인트할인수));
   const 월이자율 = 0.059 / 12;
   const 월단말할부금수 = (() => {
     if (할부개월수 <= 0 || 할부원금 <= 0) return 0;
-    const rn = Math.pow(1 + 월이자율, 할부개월수);
-    return Math.round(할부원금 * (월이자율 * rn) / (rn - 1));
+    // 원리금 균등 공식: P × r / (1 − (1+r)^−n)  ← 부동소수점 오차 최소화
+    return Math.floor(할부원금 * 월이자율 / (1 - Math.pow(1 + 월이자율, -할부개월수)));
   })();
+  const 총할부수수료 = Math.max(0, 월단말할부금수 * 할부개월수 - 할부원금);
 
-  const 월기본료수 = 99000;
-  const 프로모션수 = parseInt(프로모션입력) || 0;
-  const 약정할인적용금액 = (약정할인적용 && planTab === '선택약정할인') ? 5250 : 0;
-  const 가족할인금액 = 가족할인적용 ? 33000 : 0;
-  const 복지할인금액 = (() => {
-    switch (복지할인선택) {
-      case '장애인': case '국가유공자': return Math.round(월기본료수 * 0.35);
-      case '기초생활수급자 (생계/의료)': return 28650;
-      case '기초생활수급자 (주거/교육)': return 23650;
-      case '차상위계층': return 23650;
-      case '기초연금수급자(만 65세 이상)': return 12100;
-      default: return 0;
-    }
-  })();
-  const 현역병사할인기준 = 월기본료수 - 약정할인적용금액 - 복지할인금액;
-  const 현역병사할인금액 = 현역병사적용 ? Math.round(현역병사할인기준 * 0.20) : 0;
-  const 월요금수 = 현역병사할인기준 - 프로모션수 - 가족할인금액 - 현역병사할인금액;
+  // ─── 2단계: 통신 요금 파이프라인 (U+ 12단계) ──────────────────────────────
+  const 요금제기본료수 = parseInt(MOCK_PLANS.find(p => p.id === selectedPlan)?.monthly?.replace(/[^0-9]/g, '') ?? '0') || 0;
+  const 프로모션수     = parseInt(프로모션입력) || 0;
+
+  let 계산요금 = 요금제기본료수;
+
+  // ① 복지할인 — 기초생활(생계/의료·주거/교육), 차상위 (정액)
+  if      (복지할인선택 === '기초생활수급자 (생계/의료)')  계산요금 -= 28650;
+  else if (복지할인선택 === '기초생활수급자 (주거/교육)')  계산요금 -= 23650;
+  else if (복지할인선택 === '차상위계층')                   계산요금 -= 23650;
+
+  // ② 결합할인: 미구현 (0원)
+
+  // ③ 복지할인 — 장애인·국가유공자 (기본료 × 35%, 월 최대 23,100원 한도)
+  const 유공자장애인여부 = 복지할인선택 === '장애인' || 복지할인선택 === '국가유공자';
+  if (유공자장애인여부)
+    계산요금 -= Math.min(Math.round(요금제기본료수 * 0.35), 23100);
+
+  // ④ 오퍼성 정률 할인: 미구현 (0원)
+
+  // ⑤ 정액 할인 — 프로모션 입력값
+  계산요금 -= 프로모션수;
+
+  // ⑥ 프리미어 요금제 약정할인 (고정 5,250원)
+  if (약정할인적용) 계산요금 -= 5250;
+
+  // ⑦ 군인할인 (잔여요금 × 20%) — 장애인·국가유공자와 중복 불가
+  if (현역병사적용 && !유공자장애인여부)
+    계산요금 = Math.round(계산요금 * 0.8);
+
+  // ⑧ 선택약정할인 — 공시지원금 미적용 시만 작동 (기본료 × 25%)
+  if (planTab === '선택약정할인')
+    계산요금 -= Math.round(요금제기본료수 * 0.25);
+
+  // ⑨ 생애최초 할인: 미구현 (0원)
+
+  // ⑩ 복지할인 — 기초연금수급자 (기본료 × 50%, 월 최대 12,100원 한도)
+  if (복지할인선택 === '기초연금수급자(만 65세 이상)')
+    계산요금 -= Math.min(Math.round(요금제기본료수 * 0.5), 12100);
+
+  // ⑪ 플러스플랜130 가족할인 (고정 33,000원)
+  if (가족할인적용) 계산요금 -= 33000;
+
+  // ⑫ 장기고객할인: 미구현 (0원)
+
+  const 월요금수 = Math.max(0, 계산요금);
+
+  // ─── 3단계: 부가서비스 / 유심 ──────────────────────────────────────────────
   const 유심가격표: Record<string, number> = { '미적용': 0, '기존 유심 사용': 0, '후납': 7700, '선납': 7700, '대납': 7700, 'eSIM 후납': 2750 };
-  const 유심가입비수 = 유심가격표[유심] ?? 0;
-  const getInsPrice = (name: string) => { const f = MOCK_INSURANCES.find(i => i.name === name); return f ? parseInt(f.price.replace(/[^0-9]/g, '')) : 0; };
-  const 보험가격수 = getInsPrice(보험Modal);
+  const 유심가입비수       = 유심가격표[유심] ?? 0;
+  const getInsPrice        = (name: string) => { const f = MOCK_INSURANCES.find(i => i.name === name); return f ? parseInt(f.price.replace(/[^0-9]/g, '')) : 0; };
+  const 보험가격수         = getInsPrice(보험Modal);
   const 부가서비스가격합수 = 부가서비스List.reduce((s, n) => s + getInsPrice(n), 0);
   const 월청구부가서비스수 = 보험가격수 + 부가서비스가격합수;
 
@@ -296,7 +336,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                   className="w-[236px] h-11 flex items-center justify-between px-3 border border-[#E2E8F0] rounded-lg bg-white cursor-pointer"
                   style={{ border: '1px solid #E2E8F0' }}
                 >
-                  <span className="text-[14px] text-[#6B7280] flex-1 truncate text-left">{selectedPlan}</span>
+                  <span className="text-[14px] text-[#6B7280] flex-1 truncate text-left">{MOCK_PLANS.find(p => p.id === selectedPlan)?.name ?? ''}</span>
                   {/* Frame 643: 연필 아이콘 */}
                   <PencilIcon />
                 </button>
@@ -400,8 +440,8 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
               </div>
               {/* Frame 750: pad=16/12, gap=12, bg=#F8F9FA, border */}
               <div className="h-[116px] py-4 px-3 bg-[#F8F9FA] border border-[#E2E8F0] flex flex-col items-start gap-3 self-stretch">
-                <SummaryRow label="할부원금" value="500,000원" />
-                <SummaryRow label="할부수수료" value="54,849원" showInfo />
+                <SummaryRow label="할부원금" value={`${Math.max(0, 할부원금).toLocaleString('ko-KR')}원`} />
+                <SummaryRow label="할부수수료" value={`${총할부수수료.toLocaleString('ko-KR')}원`} showInfo />
                 <SummaryRow label="월 단말 할부금" value={`${월단말할부금수.toLocaleString('ko-KR')}원`} primary />
               </div>
             </div>
@@ -608,7 +648,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
               <div className="flex items-center justify-between h-4">
                 <span className="text-sm leading-4 text-[#6B7280]">당월 예상금액</span>
                 <span className="flex items-center">
-                  <span className="text-sm leading-4 text-[#6B7280]">54,000</span>
+                  <span className="text-sm leading-4 text-[#6B7280]">{(월단말할부금수 + 월요금수 + 월청구부가서비스수 + 유심가입비수).toLocaleString()}</span>
                   <span className="text-[12px] leading-4 text-[#6B7280]">원</span>
                 </span>
               </div>
@@ -638,7 +678,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                   onClick={() => set변경요금제ModalOpen(true)}
                   className="w-[236px] shrink-0 h-11 flex items-center justify-between pl-3 pr-2 border border-[#E2E8F0] rounded-lg bg-white cursor-pointer"
                 >
-                  <span className="text-sm flex-1 truncate text-left" style={{ color: 변경요금제 === '변경할 요금제' ? '#9CA3AF' : '#111827' }}>{변경요금제}</span>
+                  <span className="text-sm flex-1 truncate text-left" style={{ color: 변경요금제 === '변경할 요금제' ? '#9CA3AF' : '#111827' }}>{MOCK_PLANS.find(p => p.id === 변경요금제)?.name ?? 변경요금제}</span>
                   <PencilIcon />
                 </button>
               </div>
@@ -697,6 +737,8 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
         setSortOpen={setPlanSortOpen}
         onSort={setPlanSort}
         sortRef={planSortRef}
+        favorites={planFavorites}
+        onToggleFavorite={togglePlanFavorite}
       />
     )}
     {/* ── 보험 선택 모달 ── */}
@@ -733,6 +775,8 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
         setSortOpen={setPlanSortOpen}
         onSort={setPlanSort}
         sortRef={planSortRef}
+        favorites={planFavorites}
+        onToggleFavorite={togglePlanFavorite}
       />
     )}
     {/* ── 프리미어 요금제 약정할인 모달 ── */}
@@ -810,13 +854,13 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
 // 요금제 목록 데이터 (Figma 기준 컬럼)
 // ─────────────────────────────────────────────────────────────
 const PLAN_CATEGORIES = ['전체','일반','키즈','청소년','청년(유쓰)','시니어','외국인','외국인 청년','복지','LTE','태블릿/스마트워치','듀얼넘버'];
-const PLAN_SORT_OPTIONS = ['가격높은순','가격낮은순','이름순'];
+const PLAN_SORT_OPTIONS = ['높은 가격 순','낮은 가격 순','즐겨찾기'];
 
 // ── 요금제 타입 (서버 API 응답 구조에 맞춰 교체 예정) ──
 export interface PlanItem {
   id: string;
   name: string;       // 요금제명
-  monthly: string;    // 월정액 (표시용 문자열, e.g. "79,000원")
+  monthly: string;    // 월정액 (표시용 문자열, e.g. "79,000원")ㄱㄱ
   support: string;    // 이통사지원금
   call: string;       // 통화
   sms: string;        // 문자
@@ -840,6 +884,7 @@ function PlanSelectModal({
   selectedPlan, onSelect, onClose,
   search, onSearch, category, onCategory,
   sortLabel, sortOpen, setSortOpen, onSort, sortRef,
+  favorites, onToggleFavorite,
 }: {
   selectedPlan: string;
   onSelect: (plan: string) => void;
@@ -853,11 +898,28 @@ function PlanSelectModal({
   setSortOpen: (v: boolean) => void;
   onSort: (v: string) => void;
   sortRef: React.RefObject<HTMLDivElement>;
+  favorites: Set<string>;
+  onToggleFavorite: (id: string) => void;
 }) {
+  const parsePrice = (s: string) => parseInt(s.replace(/[^0-9]/g, ''), 10) || 0;
+
   // 카테고리 필터는 서버 API 호출 시 파라미터로 전달 예정 — 현재는 검색어만 적용
   const filtered = MOCK_PLANS.filter(p =>
     !search || p.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  let sorted: PlanItem[];
+  if (sortLabel === '즐겨찾기') {
+    sorted = filtered.filter(p => favorites.has(p.id));
+  } else {
+    const fav  = filtered.filter(p =>  favorites.has(p.id));
+    const rest = filtered.filter(p => !favorites.has(p.id));
+    const byPrice = (a: PlanItem, b: PlanItem) =>
+      sortLabel === '낮은 가격 순'
+        ? parsePrice(a.monthly) - parsePrice(b.monthly)
+        : parsePrice(b.monthly) - parsePrice(a.monthly);
+    sorted = [...fav.sort(byPrice), ...rest.sort(byPrice)];
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={onClose}>
@@ -880,13 +942,13 @@ function PlanSelectModal({
         <div className="flex flex-col gap-5 pt-5 flex-1 w-full min-h-0">
 
           {/* 카테고리 탭 (Frame 1004) h=44 */}
-          <div className="w-full flex shrink-0 border-b border-[#E2E8F0]">
+          <div className="w-full flex shrink-0">
             {PLAN_CATEGORIES.map(cat => (
               <button
                 key={cat}
                 onClick={() => onCategory(cat)}
-                className={`h-11 px-3 shrink-0 text-[14px] font-medium cursor-pointer whitespace-nowrap bg-white ${category === cat ? 'text-[#111827]' : 'text-[#6B7280]'}`}
-                style={{ border: 'none', borderBottom: category === cat ? '2px solid #1A80FF' : '2px solid transparent' }}
+                className={`h-11 px-3 shrink-0 text-[14px] font-medium cursor-pointer whitespace-nowrap bg-white border-none ${category === cat ? 'text-[#111827]' : 'text-[#6B7280]'}`}
+                style={{ borderBottom: category === cat ? '2px solid #1A80FF' : '2px solid transparent' }}
               >
                 {cat}
               </button>
@@ -943,23 +1005,29 @@ function PlanSelectModal({
             </div>
             {/* 데이터행 (Frame 1018) overflow-y-auto */}
             <div className="flex-1 overflow-y-auto">
-              {filtered.map(plan => (
+              {sorted.map(plan => (
                 <div
                   key={plan.id}
-                  onClick={() => onSelect(plan.name)}
+                  onClick={() => onSelect(plan.id)}
                   className={`w-full flex items-center justify-between min-h-[64px] pl-3 pr-3 cursor-pointer border-b border-[#E2E8F0] last:border-b-0
-                    ${selectedPlan === plan.name ? 'bg-[#E8F2FF]' : 'bg-white'}`}
+                    ${selectedPlan === plan.id ? 'bg-[#E8F2FF]' : 'bg-white hover:bg-[#F8F9FA]'}`}
                 >
                   <span className="w-[200px] shrink-0 text-[14px] font-medium text-[#111827]">{plan.name}</span>
-                  <span className="w-[52px] shrink-0 text-[14px] text-[#6B7280] text-center">{plan.call}</span>
-                  <span className="w-[52px] shrink-0 text-[14px] text-[#6B7280] text-center">{plan.sms}</span>
-                  <span className="w-[52px] shrink-0 text-[14px] text-[#6B7280] text-center">{plan.addCall}</span>
-                  <span className="w-[148px] shrink-0 text-[14px] text-[#6B7280] text-center break-words">{plan.data}</span>
-                  <span className="w-[80px] shrink-0 text-[14px] text-[#6B7280] text-center">{plan.monthly}</span>
-                  <span className="w-[80px] shrink-0 text-[14px] text-[#6B7280] text-center">{plan.support}</span>
-                  <div className="w-6 h-6 shrink-0 flex items-center justify-center">
+                  <span className="w-[52px] shrink-0 text-[14px] font-medium text-[#6B7280] text-center">{plan.call}</span>
+                  <span className="w-[52px] shrink-0 text-[14px] font-medium text-[#6B7280] text-center">{plan.sms}</span>
+                  <span className="w-[52px] shrink-0 text-[14px] font-medium text-[#6B7280] text-center">{plan.addCall}</span>
+                  <span className="w-[148px] shrink-0 text-[14px] font-medium text-[#6B7280] text-center break-words">{plan.data}</span>
+                  <span className="w-[80px] shrink-0 text-[14px] font-medium text-[#6B7280] text-center">{plan.monthly}</span>
+                  <span className="w-[80px] shrink-0 text-[14px] font-medium text-[#6B7280] text-center">{plan.support}</span>
+                  <div
+                    className="w-6 h-6 shrink-0 flex items-center justify-center cursor-pointer"
+                    onClick={e => { e.stopPropagation(); onToggleFavorite(plan.id); }}
+                  >
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M12.001 4.5C12.1476 4.50006 12.2906 4.54105 12.4131 4.61719C12.5355 4.69326 12.6319 4.8011 12.6924 4.92676L12.6963 4.93555L14.625 8.75098L14.7549 9.00977L15.042 9.05273L19.2881 9.66992L19.3125 9.67285C19.4598 9.68705 19.5984 9.74252 19.7129 9.83105C19.8273 9.91953 19.9124 10.0368 19.959 10.1689C20.0055 10.3011 20.013 10.4435 19.9795 10.5791C19.946 10.7147 19.8725 10.8392 19.7676 10.9375L16.6777 13.8623L16.6523 13.8848C16.5851 13.9478 16.5346 14.0276 16.5068 14.1172L16.4922 14.3711L17.2324 18.6221C17.2576 18.7603 17.2418 18.9005 17.1885 19.0293C17.1351 19.1583 17.0452 19.2711 16.9277 19.3545C16.8102 19.4379 16.6701 19.4882 16.5234 19.498C16.377 19.5078 16.231 19.4773 16.1025 19.4102L12.2744 17.4277L12.001 17.3623C11.9186 17.3623 11.8368 17.3796 11.7607 17.4121L7.90137 19.4102C7.77254 19.477 7.6261 19.5082 7.47949 19.498C7.33299 19.4879 7.19351 19.437 7.07617 19.3535C6.95885 19.2701 6.86884 19.1572 6.81543 19.0283C6.7622 18.8998 6.74647 18.7585 6.77051 18.6221L7.51953 14.3301L7.34668 13.8818L4.23535 10.9404C4.09368 10.7775 4.04679 10.6818 4.02148 10.5801C3.98782 10.4444 3.99445 10.3012 4.04102 10.1689C4.08765 10.0368 4.17264 9.91855 4.28711 9.83008C4.40175 9.74158 4.54109 9.68688 4.68848 9.67285L8.98438 9.04883L9.24707 9.00977L9.37695 8.75098L11.3057 4.93555C11.37 4.8012 11.4666 4.69325 11.5889 4.61719C11.7114 4.54105 11.8544 4.50006 12.001 4.5Z" fill="white" stroke="#E2E8F0"/>
+                      <path d="M12.001 4.5C12.1476 4.50006 12.2906 4.54105 12.4131 4.61719C12.5355 4.69326 12.6319 4.8011 12.6924 4.92676L12.6963 4.93555L14.625 8.75098L14.7549 9.00977L15.042 9.05273L19.2881 9.66992L19.3125 9.67285C19.4598 9.68705 19.5984 9.74252 19.7129 9.83105C19.8273 9.91953 19.9124 10.0368 19.959 10.1689C20.0055 10.3011 20.013 10.4435 19.9795 10.5791C19.946 10.7147 19.8725 10.8392 19.7676 10.9375L16.6777 13.8623L16.6523 13.8848C16.5851 13.9478 16.5346 14.0276 16.5068 14.1172L16.4922 14.3711L17.2324 18.6221C17.2576 18.7603 17.2418 18.9005 17.1885 19.0293C17.1351 19.1583 17.0452 19.2711 16.9277 19.3545C16.8102 19.4379 16.6701 19.4882 16.5234 19.498C16.377 19.5078 16.231 19.4773 16.1025 19.4102L12.2744 17.4277L12.001 17.3623C11.9186 17.3623 11.8368 17.3796 11.7607 17.4121L7.90137 19.4102C7.77254 19.477 7.6261 19.5082 7.47949 19.498C7.33299 19.4879 7.19351 19.437 7.07617 19.3535C6.95885 19.2701 6.86884 19.1572 6.81543 19.0283C6.7622 18.8998 6.74647 18.7585 6.77051 18.6221L7.51953 14.3301L7.34668 13.8818L4.23535 10.9404C4.09368 10.7775 4.04679 10.6818 4.02148 10.5801C3.98782 10.4444 3.99445 10.3012 4.04102 10.1689C4.08765 10.0368 4.17264 9.91855 4.28711 9.83008C4.40175 9.74158 4.54109 9.68688 4.68848 9.67285L8.98438 9.04883L9.24707 9.00977L9.37695 8.75098L11.3057 4.93555C11.37 4.8012 11.4666 4.69325 11.5889 4.61719C11.7114 4.54105 11.8544 4.50006 12.001 4.5Z"
+                        fill={favorites.has(plan.id) ? '#FACC15' : 'white'}
+                        stroke={favorites.has(plan.id) ? '#FACC15' : '#E2E8F0'}
+                      />
                     </svg>
                   </div>
                 </div>
@@ -1167,52 +1235,79 @@ function 약정할인Modal({ onApply, onReset, onClose }: { onApply: () => void;
   const REFUND_HEADERS = ['약정기간', '~6개월', '7~12개월', '13~16개월', '17~20개월', '21~24개월'];
   const REFUND_VALUES  = ['구간 별 반환 비율', '100%', '50%', '30%', '-20%', '-40%'];
   return (
-    <LguModalShell
-      title="프리미어 요금제 약정할인"
-      titleExtra={
-        <button className="flex items-center gap-1 text-[14px] text-[#9CA3AF] bg-transparent border-none cursor-pointer p-0">
-          공식사이트
-          <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-            <path d="M5 1H7V3M7 1L3 5" stroke="#9CA3AF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M1 3V7H5V4" stroke="#9CA3AF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-      }
-      onClose={onClose}
-      onApply={onApply}
-      onReset={onReset}
-    >
-      <LguInfoSection title="1. 가입대상">
-        <span className="text-[16px] text-[#6B7280]">3번(가입 가능 요금제)와 같은 요금제에 가입한 고객</span>
-      </LguInfoSection>
-      <LguInfoSection title="2. 서비스 내용">
-        <span className="text-[16px] text-[#6B7280]">약정 기간(24개월) 동안 부가세 포함 월 5,250원 할인</span>
-      </LguInfoSection>
-      <LguInfoSection title="3. 가입 가능 요금제">
-        <span className="text-[16px] text-[#6B7280]">통합 요금제: 플러스플랜130, 플러스플랜115, 플러스플랜105, 플러스플랜95, 데이터플랜MAX</span>
-        <span className="text-[16px] text-[#6B7280]">5G 요금제: 5G 프리미어 레귤러/에센셜</span>
-        <span className="text-[16px] text-[#6B7280]">LTE 요금제: LTE 프리미어 플러스/에센셜</span>
-      </LguInfoSection>
-      <LguInfoSection title="4. 유의사항(할인 반환금)">
-        <span className="text-[16px] text-[#6B7280]">- 약정 기간 안에 해지하거나 다른 요금제로 변경 시 할인 반환금 발생</span>
-        <div className="border border-[#E2E8F0] rounded overflow-hidden mt-1">
-          <div className="flex bg-[#EAECF0]">
-            {REFUND_HEADERS.map((h, i) => (
-              <div key={h} className={`flex-1 h-8 flex items-center px-2 ${i > 0 ? 'border-l border-[#E2E8F0]' : ''}`}>
-                <span className="text-[14px] text-[#6B7280]">{h}</span>
-              </div>
-            ))}
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={onClose}>
+      <div className="w-[900px] bg-white rounded-2xl py-7 px-6 flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="h-10 flex items-center justify-between border-b border-[#E2E8F0] shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-[20px] font-semibold text-[#111827]">프리미어 요금제 약정할인</span>
+            <button className="flex items-center gap-1 text-[14px] text-[#9CA3AF] bg-transparent border-none cursor-pointer p-0">
+              공식사이트
+              <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                <path d="M5 1H7V3M7 1L3 5" stroke="#9CA3AF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M1 3V7H5V4" stroke="#9CA3AF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
-          <div className="flex border-t border-[#E2E8F0] bg-white">
-            {REFUND_VALUES.map((v, i) => (
-              <div key={i} className={`flex-1 h-10 flex items-center px-2 ${i > 0 ? 'border-l border-[#E2E8F0]' : ''}`}>
-                <span className="text-[13px] text-[#6B7280]">{v}</span>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center bg-transparent border-none cursor-pointer p-0">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1l12 12M13 1L1 13" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div className="flex flex-col gap-5 pt-5 overflow-y-auto">
+          <div className="flex flex-col gap-2 py-1">
+            <span className="text-[18px] font-medium text-[#111827]">1. 가입대상</span>
+            <div className="bg-[#F8F9FA] border border-[#E2E8F0] p-3 flex flex-col gap-2">
+              <span className="text-[16px] text-[#6B7280]">3번(가입 가능 요금제)와 같은 요금제에 가입한 고객</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 py-1">
+            <span className="text-[18px] font-medium text-[#111827]">2. 서비스 내용</span>
+            <div className="bg-[#F8F9FA] border border-[#E2E8F0] p-3 flex flex-col gap-2">
+              <span className="text-[16px] text-[#6B7280]">약정 기간(24개월) 동안 부가세 포함 월 5,250원 할인</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 py-1">
+            <span className="text-[18px] font-medium text-[#111827]">3. 가입 가능 요금제</span>
+            <div className="bg-[#F8F9FA] border border-[#E2E8F0] p-3 flex flex-col gap-2">
+              <span className="text-[16px] text-[#6B7280]">통합 요금제: 플러스플랜130, 플러스플랜115, 플러스플랜105, 플러스플랜95, 데이터플랜MAX</span>
+              <span className="text-[16px] text-[#6B7280]">5G 요금제: 5G 프리미어 레귤러/에센셜</span>
+              <span className="text-[16px] text-[#6B7280]">LTE 요금제: LTE 프리미어 플러스/에센셜</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 py-1">
+            <span className="text-[18px] font-medium text-[#111827]">4. 유의사항(할인 반환금)</span>
+            <div className="bg-[#F8F9FA] border border-[#E2E8F0] p-3 flex flex-col gap-2">
+              <span className="text-[16px] text-[#6B7280]">- 약정 기간 안에 해지하거나 다른 요금제로 변경 시 할인 반환금 발생</span>
+              <div className="overflow-hidden border border-[#E2E8F0]">
+                <div className="flex border-b border-[#E2E8F0]">
+                  {REFUND_HEADERS.map((h, i) => (
+                    <div key={h} className={`w-[138px] h-8 flex items-center justify-center bg-[#E8F2FF] ${i > 0 ? 'border-l border-[#E2E8F0]' : ''}`}>
+                      <span className="text-[14px] text-[#111827]">{h}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex">
+                  {REFUND_VALUES.map((v, i) => (
+                    <div key={i} className={`w-[138px] h-10 flex items-center justify-center bg-white ${i > 0 ? 'border-l border-[#E2E8F0]' : ''}`}>
+                      <span className="text-[13px] text-[#6B7280]">{v}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
-      </LguInfoSection>
-    </LguModalShell>
+        <div className="flex justify-center gap-5 pt-6">
+          <button onClick={onReset} className="w-[200px] h-[52px] bg-[#F8F9FA] text-[#9CA3AF] text-[16px] font-medium rounded-lg border-none cursor-pointer">
+            미적용
+          </button>
+          <button onClick={onApply} className="w-[200px] h-[52px] bg-[#1A80FF] text-white text-[16px] font-medium rounded-lg border-none cursor-pointer">
+            적용
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1253,12 +1348,13 @@ const 복지할인ROWS = [
 ];
 
 function 복지할인Modal({ selected, onApply, onClose }: { selected: string; onApply: (v: string) => void; onClose: () => void }) {
-  const [localSelected, setLocalSelected] = useState(selected);
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="w-[900px] bg-white rounded-xl p-6 flex flex-col gap-6" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0]">
-          <div className="flex items-center gap-3">
+      {/* 모달: w=900 pt=28 pr=24 pb=28 pl=24 r=16 */}
+      <div className="w-[900px] bg-white rounded-2xl py-7 px-6 flex flex-col" onClick={e => e.stopPropagation()}>
+        {/* 헤더 (Frame 832): h=40 SPACE_BETWEEN pb=12 border-b */}
+        <div className="h-10 flex items-center justify-between border-b border-[#E2E8F0]">
+          <div className="flex items-center gap-2">
             <span className="text-[20px] font-semibold text-[#111827]">복지할인</span>
             <button className="flex items-center gap-1 text-[14px] text-[#9CA3AF] bg-transparent border-none cursor-pointer p-0">
               공식사이트
@@ -1274,31 +1370,29 @@ function 복지할인Modal({ selected, onApply, onClose }: { selected: string; o
             </svg>
           </button>
         </div>
-        <div className="flex items-center h-12 px-3 bg-[#F8F9FA] border border-[#E2E8F0] rounded-lg">
-          <span className="w-[180px] shrink-0 text-[14px] text-[#9CA3AF]">요금제명</span>
-          <span className="flex-1 text-[14px] text-[#9CA3AF]">월정액</span>
-          <span className="w-[80px] shrink-0 text-[14px] text-[#9CA3AF]">할인</span>
-        </div>
-        <div className="flex flex-col border border-[#E2E8F0] rounded-lg overflow-hidden">
-          {복지할인ROWS.map(row => (
-            <div
-              key={row.category}
-              onClick={() => setLocalSelected(row.category)}
-              className={`flex items-center min-h-[64px] px-3 cursor-pointer border-b border-[#E2E8F0] last:border-b-0 ${localSelected === row.category ? 'bg-[#E8F2FF]' : 'bg-white'}`}
-            >
-              <span className="w-[180px] shrink-0 text-[14px] font-medium text-[#111827]">{row.category}</span>
-              <span className="flex-1 text-[12px] text-[#6B7280] break-words">{row.desc}</span>
-              <span className="w-[80px] shrink-0 text-[14px] font-medium text-[#6B7280] text-right">{row.max}</span>
+        {/* 바디 (Frame 875): pt=20 */}
+        <div className="pt-5">
+          {/* 테이블 (Frame 1016): border stroke=#e2e8f0, no radius */}
+          <div className="border border-[#E2E8F0] overflow-hidden">
+            {/* 헤더행 (Frame 1017): h=48 fill=#f8f9fa pt=16 pr=12 pb=16 pl=12 gap=20 */}
+            <div className="h-12 flex items-center gap-5 pl-3 pr-3 bg-[#F8F9FA] border-b border-[#E2E8F0]">
+              <span className="w-[180px] shrink-0 text-[14px] text-[#9CA3AF]">요금제명</span>
+              <span className="flex-1 text-[14px] text-[#9CA3AF]">월정액</span>
+              <span className="w-[80px] shrink-0 text-[14px] text-[#9CA3AF] text-center">할인</span>
             </div>
-          ))}
-        </div>
-        <div className="flex justify-center gap-5">
-          <button onClick={() => onApply('미적용')} className="w-[200px] h-[52px] bg-[#F8F9FA] text-[#9CA3AF] text-[16px] font-medium rounded-lg border-none cursor-pointer">
-            미적용
-          </button>
-          <button onClick={() => onApply(localSelected)} className="w-[200px] h-[52px] bg-[#1A80FF] text-white text-[16px] font-medium rounded-lg border-none cursor-pointer">
-            적용
-          </button>
+            {/* 데이터행 (Frame 1019~1035): h=64 counter=CENTER gap=20 pt=8 pr=12 pb=8 pl=12 */}
+            {복지할인ROWS.map(row => (
+              <div
+                key={row.category}
+                onClick={() => onApply(row.category)}
+                className={`flex items-center min-h-[64px] gap-5 pl-3 pr-3 py-2 cursor-pointer border-b border-[#E2E8F0] last:border-b-0 ${selected === row.category ? 'bg-[#E8F2FF]' : 'bg-white'}`}
+              >
+                <span className="w-[180px] shrink-0 text-[14px] font-medium text-[#111827]">{row.category}</span>
+                <span className="flex-1 text-[12px] text-[#6B7280] break-words">{row.desc}</span>
+                <span className="w-[60px] shrink-0 text-[14px] font-medium text-[#6B7280] text-center">{row.max}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -1370,9 +1464,9 @@ function 카드할인Modal({ title, onApply, onReset, onClose }: { title: string
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="w-[900px] bg-white rounded-xl p-6 flex flex-col gap-6" onClick={e => e.stopPropagation()}>
+      <div className="w-[900px] bg-white rounded-xl py-7 px-6 flex flex-col gap-5" onClick={e => e.stopPropagation()}>
         {/* 헤더 */}
-        <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0]">
+        <div className="h-10 flex items-center justify-between border-b border-[#E2E8F0]">
           <span className="text-[20px] font-semibold text-[#111827]">{title}</span>
           <button onClick={onClose} className="w-7 h-7 flex items-center justify-center bg-transparent border-none cursor-pointer p-0">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -1381,28 +1475,28 @@ function 카드할인Modal({ title, onApply, onReset, onClose }: { title: string
           </button>
         </div>
         {/* 바디: 좌(카드 목록 w=252) + 우(상세) */}
-        <div className="flex gap-4 overflow-y-auto max-h-[500px]">
+        <div className="flex overflow-y-auto max-h-[552px]">
           {/* 좌: Frame 954 — 카드 목록 */}
-          <div className="w-[252px] shrink-0 flex flex-col">
+          <div className="w-[252px] shrink-0 flex flex-col pt-5 pb-5 pr-3">
             {카드할인CARDS.map((card, i) => (
               <div
                 key={i}
                 onClick={() => setSelectedCard(i)}
-                className={`w-[240px] px-3 pt-4 pb-4 flex flex-col gap-3 cursor-pointer border-b border-[#E2E8F0] last:border-b-0 ${selectedCard === i ? 'bg-[#E8F2FF]' : 'bg-white'}`}
+                className={`w-[240px] px-3 pt-5 pb-5 flex flex-col gap-1 cursor-pointer rounded-lg ${selectedCard === i ? 'bg-[#F8F9FA]' : 'bg-white'}`}
               >
                 {/* Frame 956: 카드명 */}
-                <span className={`text-[14px] leading-[1.4] ${i === 0 ? 'font-medium' : 'font-normal'} text-[#111827]`}>{card.name}</span>
+                <span className={`text-[14px] leading-[1.4] ${selectedCard === i ? 'font-medium text-[#111827]' : 'font-normal text-[#6B7280]'}`}>{card.name}</span>
                 {/* Frame 877: 월 금액 ~ */}
-                <div className="flex items-center gap-1">
-                  <span className="text-[14px] font-medium text-[#111827]">월</span>
-                  <span className="text-[14px] font-medium text-[#111827]">{card.amount}</span>
-                  <span className="text-[14px] font-medium text-[#111827]">~</span>
+                <div className="flex items-center gap-1 justify-end">
+                  <span className={`text-[14px] font-medium ${selectedCard === i ? 'text-[#023E8A]' : 'text-[#111827]'}`}>월</span>
+                  <span className={`text-[14px] font-medium ${selectedCard === i ? 'text-[#023E8A]' : 'text-[#111827]'}`}>{card.amount}</span>
+                  <span className={`text-[14px] font-medium ${selectedCard === i ? 'text-[#023E8A]' : 'text-[#111827]'}`}>~</span>
                 </div>
               </div>
             ))}
           </div>
           {/* 우: Frame 955 — 상세 패널 */}
-          <div className="flex-1 flex flex-col gap-5">
+          <div className="flex-1 flex flex-col gap-5 pt-5 pb-5 pl-3">
             {/* Frame 963: 카드 이미지 + 상세정보 (gap=20) */}
             <div className="flex items-center gap-5">
               {/* Rectangle 684: KB 카드 이미지 (216×136) */}
@@ -1429,7 +1523,7 @@ function 카드할인Modal({ title, onApply, onReset, onClose }: { title: string
               </div>
             </div>
             {/* Frame 859: 전월 실적 구간 선택 */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 py-1">
               <span className="text-[16px] font-medium text-[#111827]">전월 실적 구간 선택</span>
               <div className="flex flex-col gap-2">
                 {카드할인TIERS.map((tier, i) => (
@@ -1440,8 +1534,8 @@ function 카드할인Modal({ title, onApply, onReset, onClose }: { title: string
                   >
                     <div className="flex items-center gap-2">
                       {/* radio circle */}
-                      <div className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${selectedTier === i ? 'border-[#1A80FF]' : 'border-[#9CA3AF]'}`}>
-                        {selectedTier === i && <div className="w-[6px] h-[6px] rounded-full bg-[#1A80FF]" />}
+                      <div className={`relative w-3 h-3 rounded-full border ${selectedTier === i ? 'border-[#1A80FF] bg-white' : 'border-[#E2E8F0]'}`}>
+                        {selectedTier === i && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[8px] h-[8px] rounded-full bg-[#1A80FF]" />}
                       </div>
                       <span className="text-[14px] text-[#111827]">{tier.label}</span>
                     </div>
@@ -1459,12 +1553,12 @@ function 카드할인Modal({ title, onApply, onReset, onClose }: { title: string
               {/* Frame 988 (VERTICAL gap=8) */}
               <div className="flex flex-col gap-2">
                 {/* Frame 972: 링크 전송 행 (h=56 bg=#F8F9FA, px=12 py=8) */}
-                <div className="h-[56px] bg-[#F8F9FA] flex items-center px-3">
+                <div className="h-[56px] bg-[#F8F9FA] rounded-lg flex items-center px-3">
                   {/* Frame 986 (HORIZONTAL gap=8 CENTER) */}
                   <div className="flex items-center gap-2 w-full">
                     <span className="text-[14px] text-[#6B7280] shrink-0">카드 신청 링크 전송</span>
                     {/* Frame 720: input (w=332 h=40 bg=white) */}
-                    <div className="flex-1 h-[40px] bg-white flex items-center px-3">
+                    <div className="flex-1 h-[40px] bg-white rounded-lg border border-[#E2E8F0] flex items-center px-3">
                       <input
                         className="w-full text-[14px] text-[#9CA3AF] outline-none border-none bg-transparent"
                         placeholder="-없이 숫자만 입력해 주세요"
@@ -1477,13 +1571,13 @@ function 카드할인Modal({ title, onApply, onReset, onClose }: { title: string
                   </div>
                 </div>
                 {/* Frame 971: 연락 방법 (HORIZONTAL SPACE_BETWEEN px=60 py=24) */}
-                <div className="flex items-center justify-between px-[60px] py-6 bg-white">
+                <div className="flex items-center justify-between px-[60px] py-6 bg-white rounded-lg border border-[#E2E8F0]">
                   {/* Frame 976: 전화 (VERTICAL CENTER gap=4) */}
                   <div className="flex flex-col items-center gap-1">
                     {/* Frame 975 (VERTICAL CENTER gap=4) */}
                     <div className="flex flex-col items-center gap-1">
-                      {/* Frame 972 (40×40 bg=#F8F9FA rounded) */}
-                      <div className="w-10 h-10 bg-[#F8F9FA] rounded-lg flex items-center justify-center">
+                      {/* Frame 972 (40×40 bg=#F8F9FA r=26) */}
+                      <div className="w-10 h-10 bg-[#F8F9FA] rounded-[26px] flex items-center justify-center">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                           <path d="M18.9994 14.4765V17.1862C19.0005 17.4377 18.9488 17.6867 18.8479 17.9172C18.7469 18.1477 18.5988 18.3546 18.4131 18.5247C18.2273 18.6947 18.008 18.8242 17.7693 18.9048C17.5305 18.9854 17.2775 19.0153 17.0265 18.9927C14.2415 18.6907 11.5664 17.7409 9.21601 16.2197C7.02929 14.8329 5.17534 12.9827 3.7858 10.8003C2.25627 8.44389 1.30442 5.76107 1.00735 2.96915C0.98473 2.71938 1.01447 2.46764 1.09468 2.22996C1.17489 1.99229 1.30381 1.77389 1.47323 1.58866C1.64265 1.40343 1.84885 1.25544 2.07872 1.15411C2.30858 1.05278 2.55707 1.00032 2.80837 1.00009H5.52347C5.96269 0.995773 6.3885 1.151 6.72152 1.43683C7.05455 1.72267 7.27207 2.11961 7.33354 2.55366C7.44814 3.42084 7.66067 4.27229 7.96707 5.09177C8.08883 5.41507 8.11519 5.76642 8.043 6.1042C7.97082 6.44198 7.80313 6.75203 7.5598 6.99761L6.41041 8.14473C7.69877 10.406 9.57482 12.2784 11.8406 13.5642L12.99 12.4171C13.2361 12.1742 13.5467 12.0069 13.8852 11.9348C14.2236 11.8628 14.5757 11.8891 14.8996 12.0106C15.7207 12.3164 16.5739 12.5285 17.4428 12.6429C17.8824 12.7048 18.2839 12.9258 18.5709 13.2638C18.858 13.6019 19.0105 14.0335 18.9994 14.4765Z" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
@@ -1498,8 +1592,8 @@ function 카드할인Modal({ title, onApply, onReset, onClose }: { title: string
                   <div className="flex flex-col items-center gap-1">
                     {/* Frame 974 (VERTICAL CENTER gap=4) */}
                     <div className="flex flex-col items-center gap-1">
-                      {/* Frame 972 (40×40 bg=#F8F9FA rounded) */}
-                      <div className="w-10 h-10 bg-[#F8F9FA] rounded-lg flex items-center justify-center">
+                      {/* Frame 972 (40×40 bg=#F8F9FA r=26) */}
+                      <div className="w-10 h-10 bg-[#F8F9FA] rounded-[26px] flex items-center justify-center">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                           <path d="M8.99951 0C13.9699 0 17.9998 4.02919 18 8.99951C17.9998 13.9698 13.9699 18 8.99951 18L8.99756 17.999V18L8.9956 17.999C4.0272 17.9967 0.00020388 13.9684 0 8.99951C0.000186601 4.0293 4.0293 0.000186605 8.99951 0ZM13.1379 9.99772C12.9479 11.9957 12.3069 13.9162 11.2714 15.6197C13.718 14.7802 15.552 12.6251 15.9274 9.99772H13.1379ZM2.0726 9.99772C2.44766 12.6229 4.27846 14.7768 6.7218 15.6178C5.68709 13.9148 5.04715 11.9947 4.85724 9.99772H2.0726ZM6.86733 9.99772C7.08828 11.9627 7.82319 13.8343 8.99756 15.4234C10.172 13.8343 10.9069 11.9627 11.1278 9.99772H6.86733ZM11.2714 2.37832C12.3063 4.08094 12.9465 6.00064 13.1369 7.9974H15.9264C15.5498 5.37154 13.717 3.2172 11.2714 2.37832ZM8.99756 2.57561C7.82388 4.16367 7.08973 6.03372 6.86831 7.9974H11.1268C10.9054 6.0337 10.1713 4.1637 8.99756 2.57561ZM6.7218 2.38125C4.27954 3.22172 2.44979 5.37387 2.07358 7.9974H4.85821C5.04855 6.00182 5.68791 4.08312 6.7218 2.38125Z" fill="#9CA3AF"/>
                         </svg>

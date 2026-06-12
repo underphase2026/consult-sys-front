@@ -124,7 +124,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
   const 총할부수수료 = Math.max(0, 월단말할부금수 * 할부개월수 - 할부원금);
 
   // ─── 2단계: 통신 요금 파이프라인 (U+ 12단계) ──────────────────────────────
-  const 요금제기본료수 = parseInt(MOCK_PLANS.find(p => p.id === selectedPlan)?.monthly?.replace(/[^0-9]/g, '') ?? '0') || 0;
+  const 요금제기본료수 = 99000; // TODO: API 연동 시 selectedPlan 기반으로 교체
   const 프로모션수     = parseInt(프로모션입력) || 0;
 
   let 계산요금 = 요금제기본료수;

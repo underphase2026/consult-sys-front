@@ -81,7 +81,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
 
   // 요금제 선택 모달
   const [planModalOpen, setPlanModalOpen]   = useState(false);
-  const [selectedPlan, setSelectedPlan]     = useState('');
+  const [selectedPlan, setSelectedPlan]     = useState('dummy-01');
   const [planSearch, setPlanSearch]         = useState('');
   const [planCategory, setPlanCategory]     = useState('전체');
   const [planSortOpen, setPlanSortOpen]     = useState(false);
@@ -116,7 +116,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
   const 유통망지원금수 = parseInt(추가지원금입력)  || 0;
   const 현금납부수     = parseInt(현금납부입력)    || 0;
   const 할부개월수     = parseInt(할부개월)        || 24;
-  const 공통지원금수   = planTab === '공통지원금' ? 500000 : 0; // TODO: API로 교체
+  const 공통지원금수   = planTab === '공통지원금' ? (parseInt(MOCK_PLANS.find(p => p.id === selectedPlan)?.support?.replace(/[^0-9]/g, '') ?? '0') || 0) : 0;
 
   const 할부원금 = Math.max(0, 출고가수 - (공통지원금수 + 유통망지원금수 + 현금납부수 + 포인트할인수));
   const 월이자율 = 0.059 / 12;
@@ -128,7 +128,10 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
   const 총할부수수료 = Math.max(0, 월단말할부금수 * 할부개월수 - 할부원금);
 
   // ─── 2단계: 통신 요금 파이프라인 (U+ 12단계) ──────────────────────────────
-  const 요금제기본료수 = 99000; // TODO: API 연동 시 selectedPlan 기반으로 교체
+  const 요금제기본료수 = (() => {
+    const plan = MOCK_PLANS.find(p => p.id === selectedPlan);
+    return plan ? parseInt(plan.monthly.replace(/[^0-9]/g, '')) : 0;
+  })();
   const 프로모션수     = parseInt(프로모션입력) || 0;
 
   let 계산요금 = 요금제기본료수;
@@ -359,11 +362,11 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                   </svg>
                 </div>
               </div>
-              {/* 월 기본료 — 고정값 */}
+              {/* 월 기본료 */}
               <div className="flex items-center gap-2 w-full h-11">
                 <span className="w-[88px] shrink-0 text-[14px] text-[#6B7280]">월 기본료</span>
                 <div className="w-[236px] h-11 flex items-center justify-end gap-1 px-3 bg-[#F8F9FA] rounded-lg">
-                  <span className="text-[14px] text-[#111827]">99,000</span>
+                  <span className="text-[14px] text-[#111827]">{요금제기본료수.toLocaleString()}</span>
                   <span className="text-[12px] text-[#111827]">원</span>
                 </div>
               </div>
@@ -401,7 +404,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                   <span className="w-[88px] shrink-0 text-[14px] text-[#6B7280]">공통지원금</span>
                   <div className={`flex-1 min-w-0 h-11 flex items-center justify-end px-3 gap-1 rounded-lg border border-[#E2E8F0] ${planTab === '공통지원금' ? 'bg-white' : 'bg-[#F8F9FA]'}`}>
                     <span className={`text-[14px] ${planTab === '공통지원금' ? 'text-[#5AAAFF]' : 'text-[#9CA3AF]'}`}>-</span>
-                    <span className={`text-[14px] ${planTab === '공통지원금' ? 'text-[#5AAAFF]' : 'text-[#9CA3AF]'}`}>500,000</span>
+                    <span className={`text-[14px] ${planTab === '공통지원금' ? 'text-[#5AAAFF]' : 'text-[#9CA3AF]'}`}>{공통지원금수.toLocaleString()}</span>
                     <span className={`text-[12px] ${planTab === '공통지원금' ? 'text-[#5AAAFF]' : 'text-[#9CA3AF]'}`}>원</span>
                   </div>
                 </div>
@@ -697,8 +700,20 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
               <div className="flex items-center gap-2 h-11">
                 <span className="w-[76px] shrink-0 text-sm text-[#6B7280]">월 기본료</span>
                 <div className="w-[236px] shrink-0 h-11 flex items-center justify-end pl-3 pr-2 bg-[#F8F9FA] rounded-lg">
-                  <span className="text-sm text-[#111827]">-</span>
-                  <span className="text-[12px] text-[#111827]">원</span>
+                  {(() => {
+                    const plan = MOCK_PLANS.find(p => p.id === 변경요금제);
+                    return plan ? (
+                      <>
+                        <span className="text-sm text-[#111827]">{plan.monthly.replace('원', '')}</span>
+                        <span className="text-[12px] text-[#111827]">원</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-sm text-[#111827]">-</span>
+                        <span className="text-[12px] text-[#111827]">원</span>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -904,6 +919,7 @@ export interface PlanItem {
 // TODO: 실제 서버 API 호출로 교체 — fetchPlans(carrier, category)
 // TODO: API 연동 시 아래 데이터를 서버 응답으로 교체
 const MOCK_PLANS: PlanItem[] = [
+  { id: 'dummy-01', name: '5G 프리미어 에센셜', monthly: '95,000원', support: '570,000원', call: '무제한', sms: '무제한', addCall: '300분', data: '150GB + 5Mbps' },
   { id: 'plan-01', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
   { id: 'plan-02', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
   { id: 'plan-03', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },

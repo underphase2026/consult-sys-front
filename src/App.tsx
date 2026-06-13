@@ -12,6 +12,7 @@ import RegisterMarket from './pages/register-market';
 import RegisterStaff from './pages/register-staff';
 import PaymentPage from './pages/payment-page';
 import ConsultingLayout from './components/ConsultingLayout';
+import ConsultingMain from './pages/Consulting_Main';
 import { ConsultingTabsProvider } from './contexts/ConsultingTabsContext';
 
 function App() {
@@ -32,9 +33,12 @@ function App() {
         <Route path="/register-staff" element={<RegisterStaff />} />
         <Route path="/payment" element={<PaymentPage />} />
 
-        {/* 컨설팅 전체를 단일 라우트로 — URL 변경 없이 탭별 독립 step 상태로 관리 */}
+        {/* 상담 메인 대시보드 */}
+        <Route path="/consulting" element={<ConsultingMain />} />
+
+        {/* 탭 기반 상담 세션 */}
         <Route
-          path="/consulting/*"
+          path="/consulting/session/*"
           element={
             <ConsultingTabsProvider>
               <ConsultingLayout />

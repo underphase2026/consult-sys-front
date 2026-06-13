@@ -1,10 +1,23 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PrivateHeader from '../components/PrivateHeader';
 import Footer from '../components/Footer';
 import marketIcon from '../images/market.svg';
 
+const DUMMY_STORE_CODE = 'STORE001';
+
 export default function RegisterStaff() {
   const navigate = useNavigate();
+  const [code, setCode] = useState('');
+  const [codeStatus, setCodeStatus] = useState<'idle' | 'verified' | 'error'>('idle');
+
+  const handleVerify = () => {
+    if (code.trim().length >= 4) {
+      setCodeStatus('verified');
+    } else {
+      setCodeStatus('error');
+    }
+  };
 
   return (
     <div className="app-page">
@@ -25,14 +38,27 @@ export default function RegisterStaff() {
           >
             <div className="field-group">
               <label className="field-label">매장 코드</label>
-              <div className="input-wrap">
+              <div className={codeStatus === 'verified' ? 'input-wrap-gray' : 'input-wrap'}>
                 <input
                   type="text"
-                  placeholder="매장 코드를 입력해 주세요"
-                  className="inner-input"
+                  placeholder={`매장 코드를 입력해 주세요 (예: ${DUMMY_STORE_CODE})`}
+                  value={code}
+                  onChange={(e) => { setCode(e.target.value); setCodeStatus('idle'); }}
+                  readOnly={codeStatus === 'verified'}
+                  className={codeStatus === 'verified' ? 'inner-input-gray' : 'inner-input'}
                 />
-                <button type="button" className="action-btn">인증</button>
+                {codeStatus === 'verified' ? (
+                  <span className="text-sm text-text-muted shrink-0">인증 완료</span>
+                ) : (
+                  <button type="button" className="action-btn" onClick={handleVerify}>인증</button>
+                )}
               </div>
+              {codeStatus === 'verified' && (
+                <span className="text-[13px] text-primary leading-5">매장 코드가 확인되었어요</span>
+              )}
+              {codeStatus === 'error' && (
+                <span className="text-[13px] text-error leading-5">매장 코드를 확인해주세요</span>
+              )}
             </div>
 
             <div className="submit-wrap pb-5">

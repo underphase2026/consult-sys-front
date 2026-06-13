@@ -8,6 +8,7 @@ import BadgeFaceId     from '../images/badge-faceid.svg';
 import BadgeWaterproof from '../images/badge-waterproof.svg';
 import WiredChargeIcon from '../images/wired_charge.svg';
 import UsimIcon        from '../images/usim.svg';
+import ExampleImg      from '../images/example.png';
 
 interface DeviceColor { name: string; hex: string; }
 interface Device { id: string; brand: string; name: string; model: string; price: string; colors: DeviceColor[]; }
@@ -51,6 +52,9 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
   const [현금납부입력, set현금납부입력]     = useState('');
   const [프로모션입력, set프로모션입력]     = useState('');
   const [포인트할인입력, set포인트할인입력]   = useState('');
+  const [서식지ModalOpen, set서식지ModalOpen]             = useState(false);
+  const [기기변경서식지ModalOpen, set기기변경서식지ModalOpen]   = useState(false);
+  const [번호이동서식지ModalOpen, set번호이동서식지ModalOpen]   = useState(false);
   const [약정할인ModalOpen, set약정할인ModalOpen] = useState(false);
   const [약정할인적용, set약정할인적용]       = useState(false);
   const [가족할인ModalOpen, set가족할인ModalOpen] = useState(false);
@@ -601,7 +605,15 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
               </div>
               {/* Frame 1047: task list */}
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between px-2 py-3 bg-[#F8F9FA] rounded-lg h-11">
+                <button
+                  type="button"
+                  className="flex items-center justify-between px-2 py-3 bg-[#F8F9FA] rounded-lg h-11 cursor-pointer w-full border-none"
+                  onClick={() => {
+                    if (planTab === '선택약정할인' && 가입유형 === '기기변경') set기기변경서식지ModalOpen(true);
+                    else if (planTab === '선택약정할인' && 가입유형 === '번호이동') set번호이동서식지ModalOpen(true);
+                    else set서식지ModalOpen(true);
+                  }}
+                >
                   <span className="text-[14px] text-[#111827]">1. 서식지(통신사 서식) 출력</span>
                   <div className="flex items-center">
                     <span className="text-[12px] text-[#1A80FF]">완료</span>
@@ -611,7 +623,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                       </svg>
                     </div>
                   </div>
-                </div>
+                </button>
                 <div className="flex items-center justify-between px-2 py-3 bg-[#F8F9FA] rounded-lg h-11">
                   <span className="text-[14px] text-[#111827]">2. 개통 안내서</span>
                   <div className="flex items-center">
@@ -777,6 +789,27 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
         sortRef={planSortRef}
         favorites={planFavorites}
         onToggleFavorite={togglePlanFavorite}
+      />
+    )}
+    {/* ── 서식지 출력 모달 ── */}
+    {서식지ModalOpen && (
+      <서식지Modal
+        가입유형={가입유형}
+        onClose={() => set서식지ModalOpen(false)}
+      />
+    )}
+    {/* ── 서식지 출력 모달 (선택약정할인 기기변경) ── */}
+    {기기변경서식지ModalOpen && (
+      <서식지Modal
+        가입유형="기기변경"
+        onClose={() => set기기변경서식지ModalOpen(false)}
+      />
+    )}
+    {/* ── 서식지 출력 모달 (선택약정할인 번호이동) ── */}
+    {번호이동서식지ModalOpen && (
+      <서식지Modal
+        가입유형="번호이동"
+        onClose={() => set번호이동서식지ModalOpen(false)}
       />
     )}
     {/* ── 프리미어 요금제 약정할인 모달 ── */}
@@ -1771,5 +1804,302 @@ function ChevronIcon() {
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0">
       <path d="M4 6l4 4 4-4" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 서식지 출력 모달 (신규가입 / 번호이동 / 기기변경)
+// ─────────────────────────────────────────────────────────────
+const 출력양식목록 = [
+  '성인 가입신청서',
+  '서비스 신청서 모바일',
+  '무선표준 안내서',
+  'LG 번호이동 전환지원금 확인서',
+];
+const 고객구분옵션 = ['성인', '청소년'];
+const 통신사옵션   = ['미선택', 'SKT', 'KT', 'MVNO(알뜰폰)'];
+
+function 서식지Modal({ 가입유형, onClose }: { 가입유형: string; onClose: () => void }) {
+  const [고객구분, set고객구분]       = useState('성인');
+  const [기기일련번호, set기기일련번호] = useState('');
+  const [유심일련번호, set유심일련번호] = useState('');
+  const [이전통신사, set이전통신사]   = useState('미선택');
+  const [카드할인, set카드할인]       = useState(true);
+  const [매장정보, set매장정보]       = useState(true);
+  const [카드체크, set카드체크]       = useState<string[]>(['매장명', '연락처', '주소', '판매자']);
+  const [선택양식, set선택양식]       = useState<string[]>(['성인 가입신청서', '서비스 신청서 모바일']);
+
+  const toggle양식 = (item: string) =>
+    set선택양식(prev => prev.includes(item) ? prev.filter(x => x !== item) : [...prev, item]);
+  const toggle카드 = (item: string) =>
+    set카드체크(prev => prev.includes(item) ? prev.filter(x => x !== item) : [...prev, item]);
+
+  const handle출력 = () => window.open(ExampleImg, '_blank');
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.5)' }}
+      onClick={onClose}
+    >
+      <div
+        className="flex flex-col rounded-2xl bg-white"
+        style={{ width: 900, padding: '28px 24px', gap: 20, display: 'flex', flexDirection: 'column' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* ── 헤더 ── */}
+        <div className="flex items-center justify-between" style={{ height: 44 }}>
+          <div className="flex items-center" style={{ gap: 8 }}>
+            <span className="text-[20px] font-semibold text-[#111827]">서식지 출력</span>
+            <span className="text-[16px] font-normal text-[#9CA3AF]">{가입유형}</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex items-center justify-center bg-transparent border-none cursor-pointer"
+            style={{ width: 28, height: 28 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1l12 12M13 1L1 13" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* ── 바디: 좌우 2컬럼 ── */}
+        <div className="flex" style={{ gap: 0, background: '#FFFFFF' }}>
+
+          {/* 좌측 400px */}
+          <div className="flex flex-col" style={{ width: 400, padding: '20px 12px', gap: 20 }}>
+
+            {/* 기본설정 */}
+            <div className="flex flex-col" style={{ gap: 12 }}>
+              <span className="text-[16px] font-medium text-[#111827]">기본설정</span>
+              <div className="flex flex-col" style={{ gap: 12 }}>
+                {/* 고객구분 — Frame 720: 296px, bg=#FFFFFF, stroke=#E2E8F0, r=8 */}
+                <FormField label="고객구분">
+                  <서식지Dropdown value={고객구분} options={고객구분옵션} onChange={set고객구분} width={296} />
+                </FormField>
+                {/* 기기 일련번호 */}
+                <FormField label="기기 일련번호">
+                  <input
+                    value={기기일련번호} onChange={e => set기기일련번호(e.target.value)}
+                    className="h-11 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] text-[#111827] outline-none"
+                    style={{ width: 296 }}
+                  />
+                </FormField>
+                {/* 유심 일련번호 */}
+                <FormField label="유심 일련번호">
+                  <input
+                    value={유심일련번호} onChange={e => set유심일련번호(e.target.value)}
+                    className="h-11 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] text-[#111827] outline-none"
+                    style={{ width: 296 }}
+                  />
+                </FormField>
+              </div>
+            </div>
+
+            {/* 번호이동 설정 (번호이동 전용) */}
+            {가입유형 === '번호이동' && (
+              <div className="flex flex-col" style={{ gap: 12 }}>
+                <span className="text-[16px] font-medium text-[#111827]">번호이동 설정</span>
+                <FormField label="이전 통신사">
+                  <서식지Dropdown value={이전통신사} options={통신사옵션} onChange={set이전통신사} width={296} />
+                </FormField>
+              </div>
+            )}
+
+            {/* 출력옵션 */}
+            <div className="flex flex-col" style={{ gap: 12 }}>
+              <span className="text-[16px] font-medium text-[#111827]">출력옵션</span>
+              <div className="flex flex-col" style={{ gap: 12 }}>
+
+                {/* Frame 994: 카드할인 토글 행 */}
+                <ToggleRow
+                  label="카드할인"
+                  value={카드할인}
+                  onChange={set카드할인}
+                />
+
+                {/* Frame 996: 매장정보 토글 + 체크박스 (카드할인과 독립) */}
+                <div className="flex flex-col" style={{ gap: 4 }}>
+                  {/* Frame 995: 매장정보 토글 행 */}
+                  <ToggleRow
+                    label="매장정보"
+                    value={매장정보}
+                    onChange={set매장정보}
+                  />
+                  {/* 카드 정보 체크박스 행 (매장정보 ON일 때만) */}
+                  {매장정보 && (
+                    <div className="flex items-center" style={{ gap: 8, height: 40, background: '#F8F9FA', borderRadius: 8, padding: '0 8px' }}>
+                      {['매장명', '연락처', '주소', '판매자'].map(item => (
+                        <button
+                          key={item} type="button"
+                          onClick={() => toggle카드(item)}
+                          className="flex items-center bg-transparent border-none cursor-pointer"
+                          style={{ gap: 4 }}
+                        >
+                          <div style={{
+                            width: 16, height: 16, borderRadius: 3,
+                            background: 카드체크.includes(item) ? '#1A80FF' : '#FFFFFF',
+                            border: 카드체크.includes(item) ? 'none' : '1.5px solid #D1D5DB',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                          }}>
+                            {카드체크.includes(item) && (
+                              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                                <path d="M1 4l3 3 5-6" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </div>
+                          <span className="text-[12px] text-[#6B7280]">{item}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          {/* 우측 452px */}
+          <div className="flex flex-col" style={{ width: 452, background: '#F8F9FA', padding: '20px 12px', gap: 20 }}>
+            <div className="flex flex-col" style={{ gap: 12 }}>
+              <span className="text-[16px] font-medium text-[#111827]">출력 양식 선택</span>
+              <div className="flex flex-col" style={{ gap: 12 }}>
+                {출력양식목록.map(item => {
+                  const checked = 선택양식.includes(item);
+                  return (
+                    <button
+                      key={item} type="button"
+                      onClick={() => toggle양식(item)}
+                      className="flex items-center justify-between cursor-pointer"
+                      style={{
+                        height: 48,
+                        padding: '12px',
+                        gap: 8,
+                        background: checked ? '#E8F2FF' : '#FFFFFF',
+                        border: checked ? '1px solid #1A80FF' : '1px solid #E2E8F0',
+                        borderRadius: 8,
+                      }}
+                    >
+                      <span className="text-[14px] text-[#111827]">{item}</span>
+                      {/* Frame 936: 체크마크 항상 표시, 선택 시 파란색·미선택 시 회색 */}
+                      <div style={{ width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                          <path d="M1 4L3.94118 7L11 1" stroke={checked ? '#1A80FF' : '#9CA3AF'} strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* ── 푸터 ── */}
+        <div className="flex items-center justify-center" style={{ gap: 20, height: 52 }}>
+          <button
+            type="button" onClick={onClose}
+            className="flex items-center justify-center rounded-lg border-none cursor-pointer"
+            style={{ width: 200, height: 52, background: '#F8F9FA' }}
+          >
+            <span className="text-[16px] font-medium text-[#9CA3AF]">취소</span>
+          </button>
+          <button
+            type="button" onClick={handle출력}
+            className="flex items-center justify-center rounded-lg border-none cursor-pointer"
+            style={{ width: 200, height: 52, background: '#1A80FF' }}
+          >
+            <span className="text-[16px] font-medium text-white">출력</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center" style={{ gap: 8, height: 44 }}>
+      <span className="text-[14px] text-[#6B7280] shrink-0" style={{ width: 84 }}>{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function ToggleRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between" style={{ height: 40 }}>
+      <div className="flex items-center" style={{ gap: 8 }}>
+        <span className="text-[14px] text-[#111827]">{label}</span>
+        <span
+          className="text-[12px]"
+          style={{
+            background: value ? '#E8F2FF' : '#F3F4F6',
+            color: value ? '#1A80FF' : '#9CA3AF',
+            borderRadius: 4,
+            padding: '2px 8px',
+          }}
+        >
+          {value ? '반영' : '미반영'}
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange(!value)}
+        className="flex items-center border-none cursor-pointer shrink-0"
+        style={{
+          width: 48, height: 24, borderRadius: 12,
+          background: value ? '#1A80FF' : '#D1D5DB',
+          padding: '2px',
+          justifyContent: value ? 'flex-end' : 'flex-start',
+          transition: 'background 0.2s',
+        }}
+      >
+        <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#FFFFFF' }} />
+      </button>
+    </div>
+  );
+}
+
+function 서식지Dropdown({ value, options, onChange, width }: { value: string; options: string[]; onChange: (v: string) => void; width?: number }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+  return (
+    <div ref={ref} className="relative" style={{ width: width ?? '100%' }}>
+      <button
+        type="button" onClick={() => setOpen(o => !o)}
+        className="w-full h-11 flex items-center justify-between px-3 rounded-lg bg-white cursor-pointer"
+        style={{ border: '1px solid #E2E8F0', borderRadius: 8 }}
+      >
+        <span className="text-[14px] text-[#111827]">{value}</span>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M4 6l4 4 4-4" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 w-full mt-2 bg-white border border-[#E2E8F0] rounded-lg z-50 overflow-hidden">
+          {options.map(opt => (
+            <button
+              key={opt} type="button"
+              onClick={() => { onChange(opt); setOpen(false); }}
+              className={`w-full h-11 px-3 text-left text-[14px] border-none cursor-pointer flex items-center
+                ${opt === value ? 'bg-[#E8F2FF]' : 'bg-white'}`}
+              style={{ color: '#111827' }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

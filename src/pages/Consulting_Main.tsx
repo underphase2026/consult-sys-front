@@ -114,10 +114,10 @@ function ConsultCard({ item, onResume }: { item: ConsultItem; onResume: () => vo
       <div className="flex items-center justify-between" style={{ height: 20 }}>
         <div className="flex items-center gap-2">
           <span className="text-[16px] font-semibold text-[#111827]">{item.id}</span>
-          <span className="text-[12px] text-[#9CA3AF]">{item.createdAt}</span>
+          <span className="text-[13px] text-[#9CA3AF]">{item.createdAt}</span>
         </div>
         <button onClick={onResume} className="flex items-center gap-1 bg-transparent border-none cursor-pointer p-0">
-          <span className="text-[12px] text-[#1A80FF]">이어서</span>
+          <span className="text-[13px] text-[#1A80FF]">이어서</span>
           <svg width="4" height="7" viewBox="0 0 4 7" fill="none">
             <path d="M1 1L3.5 3.5L1 6" stroke="#1A80FF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -131,14 +131,14 @@ function ConsultCard({ item, onResume }: { item: ConsultItem; onResume: () => vo
             <div key={i} className="flex items-center justify-between" style={{ height: 16 }}>
               <div className="flex items-center gap-1">
                 <span
-                  className="text-[13px]"
+                  className="text-[14px]"
                   style={{ color: line.type === '무선' ? '#1A80FF' : '#2E9E5E' }}
                 >
                   {line.type}
                 </span>
-                <span className="text-[13px] font-medium text-[#6B7280]">{line.device}</span>
+                <span className="text-[14px] font-medium text-[#6B7280]">{line.device}</span>
               </div>
-              <span className="text-[12px] text-[#9CA3AF]">{line.updatedAt}</span>
+              <span className="text-[13px] text-[#9CA3AF]">{line.updatedAt}</span>
             </div>
           ))}
         </div>
@@ -155,19 +155,19 @@ function VisitCard({ item }: { item: VisitItem }) {
       <div className="flex flex-col gap-1" style={{ width: 280 }}>
         <div className="flex items-center justify-between" style={{ height: 20 }}>
           <span className="text-[16px] font-semibold text-[#111827]">{item.code}</span>
-          <span className="text-[12px] text-[#1A80FF]">{item.time}</span>
+          <span className="text-[13px] text-[#1A80FF]">{item.time}</span>
         </div>
         <div className="flex items-center gap-1" style={{ height: 16 }}>
-          <span className="text-[12px] text-[#9CA3AF]">{item.name}</span>
-          <span className="text-[12px] text-[#9CA3AF]">{item.phone}</span>
+          <span className="text-[13px] text-[#9CA3AF]">{item.name}</span>
+          <span className="text-[13px] text-[#9CA3AF]">{item.phone}</span>
         </div>
       </div>
 
       {/* 태그 행 — 좌측 강조선 */}
       <div style={{ paddingLeft: 4 }}>
         <div className="flex items-center gap-1" style={{ paddingLeft: 8, borderLeft: '1px solid #E2E8F0', height: 16 }}>
-          <span className="text-[13px] text-[#1A80FF]">무선</span>
-          <span className="text-[13px] font-medium text-[#6B7280]">SKT_아이폰 17e 256GB</span>
+          <span className="text-[14px] text-[#1A80FF]">무선</span>
+          <span className="text-[14px] font-medium text-[#6B7280]">SKT_아이폰 17e 256GB</span>
         </div>
       </div>
     </div>
@@ -181,7 +181,7 @@ function TimeHeader({ hour }: { hour: string }) {
       className="flex items-center"
       style={{ borderBottom: '1px solid #E2E8F0', paddingBottom: 8, gap: 10 }}
     >
-      <span className="text-[12px] text-[#9CA3AF]">{hour}</span>
+      <span className="text-[13px] text-[#9CA3AF]">{hour}</span>
     </div>
   );
 }
@@ -246,7 +246,7 @@ export default function ConsultingMain() {
               <div className="flex items-center gap-1 shrink-0" style={{ height: 24 }}>
                 <span className="text-[16px] font-semibold text-[#111827]">금일 진행 중 상담</span>
                 <span
-                  className="text-[12px] text-[#1A80FF] flex items-center"
+                  className="text-[13px] text-[#1A80FF] flex items-center"
                   style={{ background: '#E8F2FF', borderRadius: 100, paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2, height: 20 }}
                 >
                   총 6건
@@ -279,7 +279,7 @@ export default function ConsultingMain() {
                 <div className="flex items-center gap-1">
                   <span className="text-[16px] font-semibold text-[#111827]">방문 예정</span>
                   <span
-                    className="text-[12px] text-[#1A80FF] flex items-center"
+                    className="text-[13px] text-[#1A80FF] flex items-center"
                     style={{ background: '#E8F2FF', borderRadius: 100, paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2, height: 20 }}
                   >
                     총 6건

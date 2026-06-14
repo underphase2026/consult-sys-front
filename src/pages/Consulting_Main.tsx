@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 
@@ -18,6 +18,8 @@ interface VisitItem {
   time: string;
   name: string;
   phone: string;
+  carrier: '무선' | '유선';
+  device: string;
 }
 interface TimeGroup<T> {
   hour: string;
@@ -27,30 +29,45 @@ interface TimeGroup<T> {
 // ── Mock 데이터 ───────────────────────────────────────────────────
 const MOCK_CONSULTS: TimeGroup<ConsultItem>[] = [
   {
+    hour: '10시',
+    items: [
+      {
+        id: '#20260615-7132', createdAt: '10:05 생성됨',
+        lines: [
+          { type: '무선', device: 'LG U+_Galaxy S25 Ultra 256GB', updatedAt: '2분 전 수정' },
+        ],
+      },
+      {
+        id: '#20260615-7133', createdAt: '10:38 생성됨',
+        lines: [
+          { type: '무선', device: 'KT_iPhone 17 Pro 256GB', updatedAt: '방금 전 수정' },
+          { type: '유선', device: 'KT 인터넷+TV 에센셜',    updatedAt: '15분 전 수정' },
+        ],
+      },
+    ],
+  },
+  {
     hour: '11시',
     items: [
       {
-        id: '#20260611-7135', createdAt: '11:12 생성됨',
+        id: '#20260615-7134', createdAt: '11:12 생성됨',
         lines: [
-          { type: '무선', device: 'SKT_아이폰 17e 256GB', updatedAt: '방금 전 수정' },
-          { type: '유선', device: '상품명',               updatedAt: '방금 전 수정' },
-          { type: '무선', device: 'SKT_아이폰 17e 256GB', updatedAt: '방금 전 수정' },
+          { type: '무선', device: 'SKT_iPhone 17e 256GB',       updatedAt: '방금 전 수정' },
+          { type: '유선', device: 'SKT 인터넷+TV 베이직',       updatedAt: '방금 전 수정' },
+          { type: '무선', device: 'SKT_Galaxy Z Flip7 256GB',   updatedAt: '방금 전 수정' },
         ],
       },
       {
-        id: '#20260611-7136', createdAt: '11:20 생성됨',
+        id: '#20260615-7135', createdAt: '11:40 생성됨',
         lines: [
-          { type: '무선', device: 'SKT_아이폰 17e 256GB', updatedAt: '방금 전 수정' },
-          { type: '유선', device: '상품명',               updatedAt: '방금 전 수정' },
-          { type: '무선', device: 'SKT_아이폰 17e 256GB', updatedAt: '방금 전 수정' },
+          { type: '무선', device: 'LG U+_Galaxy S25 256GB', updatedAt: '방금 전 수정' },
         ],
       },
       {
-        id: '#20260611-7137', createdAt: '11:25 생성됨',
+        id: '#20260615-7136', createdAt: '11:55 생성됨',
         lines: [
-          { type: '무선', device: 'SKT_아이폰 17e 256GB', updatedAt: '방금 전 수정' },
-          { type: '유선', device: '상품명',               updatedAt: '방금 전 수정' },
-          { type: '무선', device: 'SKT_아이폰 17e 256GB', updatedAt: '방금 전 수정' },
+          { type: '무선', device: 'LG U+_iPhone 17 Pro Max 512GB', updatedAt: '방금 전 수정' },
+          { type: '유선', device: 'LG U+ 인터넷 플러스',           updatedAt: '방금 전 수정' },
         ],
       },
     ],
@@ -59,27 +76,16 @@ const MOCK_CONSULTS: TimeGroup<ConsultItem>[] = [
     hour: '12시',
     items: [
       {
-        id: '#20260611-7138', createdAt: '12:05 생성됨',
+        id: '#20260615-7137', createdAt: '12:03 생성됨',
         lines: [
-          { type: '무선', device: 'SKT_아이폰 17e 256GB', updatedAt: '방금 전 수정' },
-          { type: '유선', device: '상품명',               updatedAt: '방금 전 수정' },
-          { type: '무선', device: 'SKT_아이폰 17e 256GB', updatedAt: '방금 전 수정' },
+          { type: '무선', device: 'KT_Galaxy S25+ 256GB', updatedAt: '방금 전 수정' },
         ],
       },
       {
-        id: '#20260611-7139', createdAt: '12:18 생성됨',
+        id: '#20260615-7138', createdAt: '12:21 생성됨',
         lines: [
-          { type: '무선', device: 'SKT_아이폰 17e 256GB', updatedAt: '방금 전 수정' },
-          { type: '유선', device: '상품명',               updatedAt: '방금 전 수정' },
-          { type: '무선', device: 'SKT_아이폰 17e 256GB', updatedAt: '방금 전 수정' },
-        ],
-      },
-      {
-        id: '#20260611-7140', createdAt: '12:31 생성됨',
-        lines: [
-          { type: '무선', device: 'SKT_아이폰 17e 256GB', updatedAt: '방금 전 수정' },
-          { type: '유선', device: '상품명',               updatedAt: '방금 전 수정' },
-          { type: '무선', device: 'SKT_아이폰 17e 256GB', updatedAt: '방금 전 수정' },
+          { type: '무선', device: 'SKT_iPhone 17 Pro 256GB',  updatedAt: '방금 전 수정' },
+          { type: '유선', device: 'SKT B tv 스탠다드',         updatedAt: '방금 전 수정' },
         ],
       },
     ],
@@ -88,19 +94,25 @@ const MOCK_CONSULTS: TimeGroup<ConsultItem>[] = [
 
 const MOCK_VISITS: TimeGroup<VisitItem>[] = [
   {
-    hour: '11시',
+    hour: '13시',
     items: [
-      { code: 'CV575', time: '14:30', name: '김*현', phone: '010-5723-1548' },
-      { code: 'CV575', time: '14:30', name: '김*현', phone: '010-5723-1548' },
-      { code: 'CV575', time: '14:30', name: '김*현', phone: '010-5723-1548' },
+      { code: 'CV571', time: '13:00', name: '이*준', phone: '010-3421-7892', carrier: '무선', device: 'LG U+_Galaxy S25 Ultra 256GB' },
+      { code: 'CV572', time: '13:30', name: '박*현', phone: '010-5512-3348', carrier: '무선', device: 'KT_iPhone 17 Pro 256GB' },
     ],
   },
   {
-    hour: '12시',
+    hour: '14시',
     items: [
-      { code: 'CV575', time: '14:30', name: '김*현', phone: '010-5723-1548' },
-      { code: 'CV575', time: '14:30', name: '김*현', phone: '010-5723-1548' },
-      { code: 'CV575', time: '14:30', name: '김*현', phone: '010-5723-1548' },
+      { code: 'CV573', time: '14:00', name: '김*민', phone: '010-7823-4519', carrier: '무선', device: 'SKT_Galaxy Z Flip7 256GB' },
+      { code: 'CV574', time: '14:30', name: '최*서', phone: '010-9834-1120', carrier: '유선', device: 'LG U+ 인터넷+TV 에센셜' },
+      { code: 'CV575', time: '14:45', name: '정*우', phone: '010-2234-8876', carrier: '무선', device: 'LG U+_iPhone 17e 256GB' },
+    ],
+  },
+  {
+    hour: '15시',
+    items: [
+      { code: 'CV576', time: '15:00', name: '한*진', phone: '010-6612-0044', carrier: '무선', device: 'SKT_iPhone 17 Pro Max 512GB' },
+      { code: 'CV577', time: '15:30', name: '강*아', phone: '010-4423-9921', carrier: '무선', device: 'KT_Galaxy S25 128GB' },
     ],
   },
 ];
@@ -166,8 +178,8 @@ function VisitCard({ item }: { item: VisitItem }) {
       {/* 태그 행 — 좌측 강조선 */}
       <div style={{ paddingLeft: 4 }}>
         <div className="flex items-center gap-1" style={{ paddingLeft: 8, borderLeft: '1px solid #E2E8F0', height: 16 }}>
-          <span className="text-[14px] text-[#1A80FF]">무선</span>
-          <span className="text-[14px] font-medium text-[#6B7280]">SKT_아이폰 17e 256GB</span>
+          <span className="text-[14px]" style={{ color: item.carrier === '무선' ? '#1A80FF' : '#2E9E5E' }}>{item.carrier}</span>
+          <span className="text-[14px] font-medium text-[#6B7280]">{item.device}</span>
         </div>
       </div>
     </div>
@@ -189,11 +201,29 @@ function TimeHeader({ hour }: { hour: string }) {
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────
 export default function ConsultingMain() {
   const navigate = useNavigate();
-  const [visitDate, setVisitDate]   = useState('6월 12일');
+  const [visitDate, setVisitDate]     = useState('6월 15일');
   const [visitSearch, setVisitSearch] = useState('');
+  const [loading, setLoading]         = useState(true);
 
-  const handlePrevDate = () => setVisitDate(prev => prev); // TODO: 날짜 이동 구현
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 700);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handlePrevDate = () => setVisitDate(prev => prev);
   const handleNextDate = () => setVisitDate(prev => prev);
+
+  const totalConsults = MOCK_CONSULTS.reduce((s, g) => s + g.items.length, 0);
+  const totalVisits   = MOCK_VISITS.reduce((s, g) => s + g.items.length, 0);
+
+  const filteredVisits = visitSearch.trim()
+    ? MOCK_VISITS.map(g => ({
+        ...g,
+        items: g.items.filter(v =>
+          v.name.includes(visitSearch) || v.code.includes(visitSearch)
+        ),
+      })).filter(g => g.items.length > 0)
+    : MOCK_VISITS;
 
   return (
     <div
@@ -245,17 +275,30 @@ export default function ConsultingMain() {
               {/* 카드 헤더 */}
               <div className="flex items-center gap-1 shrink-0" style={{ height: 24 }}>
                 <span className="text-[16px] font-semibold text-[#111827]">금일 진행 중 상담</span>
-                <span
-                  className="text-[13px] text-[#1A80FF] flex items-center"
-                  style={{ background: '#E8F2FF', borderRadius: 100, paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2, height: 20 }}
-                >
-                  총 6건
-                </span>
+                {!loading && (
+                  <span
+                    className="text-[13px] text-[#1A80FF] flex items-center"
+                    style={{ background: '#E8F2FF', borderRadius: 100, paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2, height: 20 }}
+                  >
+                    총 {totalConsults}건
+                  </span>
+                )}
               </div>
 
               {/* 상담 목록 (스크롤) */}
               <div className="flex flex-col overflow-y-auto" style={{ flex: 1, gap: 24 }}>
-                {MOCK_CONSULTS.map((group, gi) => (
+                {loading ? (
+                  <div className="flex flex-col gap-6 animate-pulse">
+                    {[3, 2].map((count, gi) => (
+                      <div key={gi} className="flex flex-col gap-3">
+                        <div className="h-4 w-12 bg-[#F0F1F3] rounded" />
+                        {Array.from({ length: count }).map((_, ii) => (
+                          <div key={ii} className="h-[88px] rounded-lg bg-[#F0F1F3]" />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ) : MOCK_CONSULTS.map((group, gi) => (
                   <div key={gi} className="flex flex-col" style={{ gap: 12 }}>
                     <TimeHeader hour={group.hour} />
                     <div className="flex flex-col" style={{ gap: 8 }}>
@@ -278,12 +321,14 @@ export default function ConsultingMain() {
                 {/* 제목 + 배지 */}
                 <div className="flex items-center gap-1">
                   <span className="text-[16px] font-semibold text-[#111827]">방문 예정</span>
-                  <span
-                    className="text-[13px] text-[#1A80FF] flex items-center"
-                    style={{ background: '#E8F2FF', borderRadius: 100, paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2, height: 20 }}
-                  >
-                    총 6건
-                  </span>
+                  {!loading && (
+                    <span
+                      className="text-[13px] text-[#1A80FF] flex items-center"
+                      style={{ background: '#E8F2FF', borderRadius: 100, paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2, height: 20 }}
+                    >
+                      총 {totalVisits}건
+                    </span>
+                  )}
                 </div>
                 {/* 날짜 내비게이터 */}
                 <div className="flex items-center" style={{ gap: 0, height: 24 }}>
@@ -332,7 +377,18 @@ export default function ConsultingMain() {
 
               {/* 방문 목록 (스크롤) */}
               <div className="flex flex-col overflow-y-auto" style={{ flex: 1, gap: 24 }}>
-                {MOCK_VISITS.map((group, gi) => (
+                {loading ? (
+                  <div className="flex flex-col gap-6 animate-pulse">
+                    {[2, 3, 2].map((count, gi) => (
+                      <div key={gi} className="flex flex-col gap-3">
+                        <div className="h-4 w-12 bg-[#F0F1F3] rounded" />
+                        {Array.from({ length: count }).map((_, ii) => (
+                          <div key={ii} className="h-[88px] rounded-lg bg-[#F0F1F3]" />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ) : filteredVisits.map((group, gi) => (
                   <div key={gi} className="flex flex-col" style={{ gap: 12 }}>
                     <TimeHeader hour={group.hour} />
                     <div className="flex flex-col" style={{ gap: 12 }}>

@@ -14,14 +14,30 @@ interface DeviceColor { name: string; hex: string; }
 interface Device { id: string; brand: string; name: string; model: string; price: string; colors: DeviceColor[]; }
 
 const DEVICES: Device[] = [
-  {
-    id: 'iphone-17e', brand: 'Apple', name: '아이폰 17e', model: 'IP17E_256GB', price: '990,000원',
-    colors: [
-      { name: '소프트핑크', hex: '#F2B8C6' },
-      { name: '화이트',     hex: '#F5F5F0' },
-      { name: '블랙',       hex: '#1C1C1E' },
-    ],
-  },
+  { id: 'iphone-17e',        brand: 'Apple',   name: '아이폰 17e',         model: 'IP17E_256GB',        price: '990,000원',
+    colors: [{ name: '소프트핑크', hex: '#F2B8C6' }, { name: '화이트', hex: '#F5F5F0' }, { name: '블랙', hex: '#1C1C1E' }] },
+  { id: 'iphone-17-pro-max', brand: 'Apple',   name: '아이폰 17 Pro Max',  model: 'IP17PROMAX_256GB',   price: '1,890,000원',
+    colors: [{ name: '네추럴 티타늄', hex: '#C5B9A8' }, { name: '블랙 티타늄', hex: '#4A4A4C' }, { name: '화이트 티타늄', hex: '#F5F5EF' }] },
+  { id: 'iphone-17-pro',     brand: 'Apple',   name: '아이폰 17 Pro',      model: 'IP17PRO_256GB',      price: '1,690,000원',
+    colors: [{ name: '네추럴 티타늄', hex: '#C5B9A8' }, { name: '블랙 티타늄', hex: '#4A4A4C' }, { name: '화이트 티타늄', hex: '#F5F5EF' }] },
+  { id: 'iphone-17',         brand: 'Apple',   name: '아이폰 17',          model: 'IP17_128GB',         price: '1,390,000원',
+    colors: [{ name: '울트라마린', hex: '#5B7EB5' }, { name: '화이트', hex: '#FAFAFA' }, { name: '블랙', hex: '#1C1C1E' }, { name: '핑크', hex: '#F5BDD2' }] },
+  { id: 'iphone-16-pro-max', brand: 'Apple',   name: '아이폰 16 Pro Max',  model: 'IP16PROMAX_256GB',   price: '1,750,000원',
+    colors: [{ name: '내추럴 티타늄', hex: '#C5B9A8' }, { name: '블랙 티타늄', hex: '#4A4A4C' }, { name: '사막 티타늄', hex: '#C8A882' }] },
+  { id: 'iphone-16-pro',     brand: 'Apple',   name: '아이폰 16 Pro',      model: 'IP16PRO_128GB',      price: '1,550,000원',
+    colors: [{ name: '내추럴 티타늄', hex: '#C5B9A8' }, { name: '블랙 티타늄', hex: '#4A4A4C' }, { name: '화이트 티타늄', hex: '#F5F5EF' }] },
+  { id: 'galaxy-s25-ultra',  brand: 'Samsung', name: '갤럭시 S25 Ultra',   model: 'SM-S938N_256GB',     price: '1,900,000원',
+    colors: [{ name: '티타늄 실버블루', hex: '#A8B8CC' }, { name: '티타늄 블랙', hex: '#3A3A3C' }, { name: '티타늄 화이트', hex: '#E8E8E0' }] },
+  { id: 'galaxy-s25-plus',   brand: 'Samsung', name: '갤럭시 S25+',        model: 'SM-S936N_256GB',     price: '1,500,000원',
+    colors: [{ name: '아이시 블루', hex: '#B8CAD8' }, { name: '민트', hex: '#B8D4CC' }, { name: '블랙', hex: '#1C1C1E' }] },
+  { id: 'galaxy-s25',        brand: 'Samsung', name: '갤럭시 S25',         model: 'SM-S931N_256GB',     price: '1,200,000원',
+    colors: [{ name: '아이시 블루', hex: '#B8CAD8' }, { name: '민트', hex: '#B8D4CC' }, { name: '블랙', hex: '#1C1C1E' }, { name: '실버 섀도우', hex: '#C8C8D0' }] },
+  { id: 'galaxy-z-fold7',    brand: 'Samsung', name: '갤럭시 Z Fold7',     model: 'SM-F966N_256GB',     price: '2,200,000원',
+    colors: [{ name: '크림 화이트', hex: '#F5F0E8' }, { name: '블랙', hex: '#1C1C1E' }, { name: '실버 블루', hex: '#A8B8CC' }] },
+  { id: 'galaxy-z-flip7',    brand: 'Samsung', name: '갤럭시 Z Flip7',     model: 'SM-F747N_256GB',     price: '1,400,000원',
+    colors: [{ name: '블루 민트', hex: '#A0C8C0' }, { name: '화이트', hex: '#F5F5F0' }, { name: '블랙', hex: '#1C1C1E' }, { name: '핑크', hex: '#F2B8C6' }] },
+  { id: 'galaxy-s24-fe',     brand: 'Samsung', name: '갤럭시 S24 FE',      model: 'SM-S721N_128GB',     price: '900,000원',
+    colors: [{ name: '블루', hex: '#7090C0' }, { name: '화이트', hex: '#F5F5F0' }, { name: '그래파이트', hex: '#5C5C64' }, { name: '민트', hex: '#B8D4CC' }] },
 ];
 
 const CARRIER_LABELS: Record<string, string> = { skt: 'SKT', kt: 'KT', lgu: 'LG U+' };
@@ -81,7 +97,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
 
   // 요금제 선택 모달
   const [planModalOpen, setPlanModalOpen]   = useState(false);
-  const [selectedPlan, setSelectedPlan]     = useState('dummy-01');
+  const [selectedPlan, setSelectedPlan]     = useState('lgu-03');
   const [planSearch, setPlanSearch]         = useState('');
   const [planCategory, setPlanCategory]     = useState('전체');
   const [planSortOpen, setPlanSortOpen]     = useState(false);
@@ -111,7 +127,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
   void carrierLabel;
 
   // ─── 1단계: 단말기 할부 계산 ───────────────────────────────────────────────
-  const 출고가수       = 1250000;                                // TODO: API로 교체
+  const 출고가수       = parseInt(device.price.replace(/[^0-9]/g, '')) || 0;
   const 포인트할인수   = parseInt(포인트할인입력)  || 0;
   const 유통망지원금수 = parseInt(추가지원금입력)  || 0;
   const 현금납부수     = parseInt(현금납부입력)    || 0;
@@ -180,7 +196,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
   // ─── 3단계: 부가서비스 / 유심 ──────────────────────────────────────────────
   const 유심가격표: Record<string, number> = { '미적용': 0, '기존 유심 사용': 0, '후납': 7700, '선납': 7700, '대납': 7700, 'eSIM 후납': 2750 };
   const 유심가입비수       = 유심가격표[유심] ?? 0;
-  const getInsPrice        = (name: string) => { const f = MOCK_INSURANCES.find(i => i.name === name); return f ? parseInt(f.price.replace(/[^0-9]/g, '')) : 0; };
+  const getInsPrice        = (name: string) => { const f = MOCK_INSURANCES.find(i => i.name === name); return f ? parseInt(f.monthly.replace(/[^0-9]/g, '')) : 0; };
   const 보험가격수         = getInsPrice(보험Modal);
   const 부가서비스가격합수 = 부가서비스List.reduce((s, n) => s + getInsPrice(n), 0);
   const 월청구부가서비스수 = 보험가격수 + 부가서비스가격합수;
@@ -323,11 +339,11 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
                   )}
                 </div>
               </div>
-              {/* 출고가 — 고정값 */}
+              {/* 출고가 */}
               <div className="flex items-center gap-2 w-full h-11">
                 <span className="w-[88px] shrink-0 text-[14px] text-[#6B7280]">출고가</span>
                 <div className="w-[236px] h-11 flex items-center justify-end gap-1 px-3 bg-[#F8F9FA] rounded-lg">
-                  <span className="text-[14px] text-[#111827]">1,250,000</span>
+                  <span className="text-[14px] text-[#111827]">{출고가수.toLocaleString()}</span>
                   <span className="text-[12px] text-[#111827]">원</span>
                 </div>
               </div>
@@ -771,6 +787,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
     {/* ── 보험 선택 모달 ── */}
     {보험ModalOpen && (
       <InsuranceSelectModal
+        title="보험"
         selectedInsurance={보험Modal}
         onSelect={(ins: string) => { set보험Modal(ins); set보험ModalOpen(false); }}
         onClose={() => set보험ModalOpen(false)}
@@ -779,6 +796,7 @@ export default function PaymentInfo({ carrier, deviceId, navigate: _navigate }: 
     {/* ── 부가서비스 선택 모달 ── */}
     {부가서비스ModalIdx !== null && (
       <InsuranceSelectModal
+        title="부가서비스"
         selectedInsurance={부가서비스List[부가서비스ModalIdx] ?? ''}
         onSelect={(ins: string) => {
           set부가서비스List(prev => prev.map((v, i) => i === 부가서비스ModalIdx ? ins : v));
@@ -917,16 +935,25 @@ export interface PlanItem {
 }
 
 // TODO: 실제 서버 API 호출로 교체 — fetchPlans(carrier, category)
-// TODO: API 연동 시 아래 데이터를 서버 응답으로 교체
 const MOCK_PLANS: PlanItem[] = [
-  { id: 'dummy-01', name: '5G 프리미어 에센셜', monthly: '95,000원', support: '570,000원', call: '무제한', sms: '무제한', addCall: '300분', data: '150GB + 5Mbps' },
-  { id: 'plan-01', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
-  { id: 'plan-02', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
-  { id: 'plan-03', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
-  { id: 'plan-04', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
-  { id: 'plan-05', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
-  { id: 'plan-06', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
-  { id: 'plan-07', name: '요금제명', monthly: '130,000원', support: '999,999원', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps' },
+  { id: 'lgu-01', name: '5G 프리미어 슈퍼',     monthly: '125,000원', support: '800,000원', call: '무제한', sms: '무제한', addCall: '300분', data: '무제한' },
+  { id: 'lgu-02', name: '5G 프리미어 플러스',   monthly: '110,000원', support: '700,000원', call: '무제한', sms: '무제한', addCall: '300분', data: '무제한' },
+  { id: 'lgu-03', name: '5G 프리미어 에센셜',   monthly: '95,000원',  support: '570,000원', call: '무제한', sms: '무제한', addCall: '300분', data: '150GB + 5Mbps' },
+  { id: 'lgu-04', name: '5G 프리미어 레귤러',   monthly: '85,000원',  support: '480,000원', call: '무제한', sms: '무제한', addCall: '300분', data: '90GB + 5Mbps' },
+  { id: 'lgu-05', name: '5G 스탠다드+',         monthly: '79,000원',  support: '420,000원', call: '무제한', sms: '무제한', addCall: '200분', data: '50GB + 1Mbps' },
+  { id: 'lgu-06', name: '5G 스탠다드',          monthly: '75,000원',  support: '380,000원', call: '무제한', sms: '무제한', addCall: '200분', data: '35GB + 1Mbps' },
+  { id: 'lgu-07', name: '5G 슬림+',             monthly: '65,000원',  support: '300,000원', call: '무제한', sms: '무제한', addCall: '100분', data: '25GB + 1Mbps' },
+  { id: 'lgu-08', name: '5G 슬림',              monthly: '55,000원',  support: '200,000원', call: '무제한', sms: '무제한', addCall: '100분', data: '15GB + 1Mbps' },
+  { id: 'lgu-09', name: '5G 미니',              monthly: '45,000원',  support: '150,000원', call: '200분',  sms: '기본',   addCall: '-',    data: '8GB + 1Mbps' },
+  { id: 'lgu-10', name: 'LTE 완전무한 프리미엄', monthly: '79,000원',  support: '350,000원', call: '무제한', sms: '무제한', addCall: '300분', data: '무제한' },
+  { id: 'lgu-11', name: 'LTE 완전무한',         monthly: '69,000원',  support: '280,000원', call: '무제한', sms: '무제한', addCall: '200분', data: '무제한' },
+  { id: 'lgu-12', name: 'LTE 스탠다드',         monthly: '59,000원',  support: '200,000원', call: '무제한', sms: '무제한', addCall: '100분', data: '15GB + 1Mbps' },
+  { id: 'lgu-13', name: 'LTE 슬림',             monthly: '49,000원',  support: '120,000원', call: '무제한', sms: '무제한', addCall: '-',    data: '8GB + 1Mbps' },
+  { id: 'lgu-14', name: '청년 유쓰 5G',         monthly: '62,000원',  support: '260,000원', call: '무제한', sms: '무제한', addCall: '200분', data: '100GB + 1Mbps' },
+  { id: 'lgu-15', name: '청년 유쓰 LTE',        monthly: '49,000원',  support: '150,000원', call: '무제한', sms: '무제한', addCall: '100분', data: '30GB + 1Mbps' },
+  { id: 'lgu-16', name: '시니어 5G 프리미엄',   monthly: '55,000원',  support: '180,000원', call: '무제한', sms: '무제한', addCall: '100분', data: '25GB + 1Mbps' },
+  { id: 'lgu-17', name: '시니어 LTE',           monthly: '42,000원',  support: '100,000원', call: '무제한', sms: '무제한', addCall: '-',    data: '8GB + 1Mbps' },
+  { id: 'lgu-18', name: '키즈 5G',              monthly: '38,000원',  support: '80,000원',  call: '무제한', sms: '무제한', addCall: '-',    data: '6GB + 1Mbps' },
 ];
 
 function PlanSelectModal({
@@ -951,6 +978,13 @@ function PlanSelectModal({
   onToggleFavorite: (id: string) => void;
 }) {
   const parsePrice = (s: string) => parseInt(s.replace(/[^0-9]/g, ''), 10) || 0;
+
+  const [planLoading, setPlanLoading] = useState(true);
+  useEffect(() => {
+    setPlanLoading(true);
+    const t = setTimeout(() => setPlanLoading(false), 600);
+    return () => clearTimeout(t);
+  }, [category]);
 
   // 카테고리 필터는 서버 API 호출 시 파라미터로 전달 예정 — 현재는 검색어만 적용
   const filtered = MOCK_PLANS.filter(p =>
@@ -1054,7 +1088,22 @@ function PlanSelectModal({
             </div>
             {/* 데이터행 (Frame 1018) overflow-y-auto */}
             <div className="flex-1 overflow-y-auto">
-              {sorted.map(plan => (
+              {planLoading ? (
+                <div className="flex flex-col">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="flex items-center justify-between min-h-[64px] pl-3 pr-3 border-b border-[#E2E8F0] animate-pulse">
+                      <div className="w-[200px] h-4 bg-[#F0F1F3] rounded" />
+                      <div className="w-[52px] h-4 bg-[#F0F1F3] rounded" />
+                      <div className="w-[52px] h-4 bg-[#F0F1F3] rounded" />
+                      <div className="w-[52px] h-4 bg-[#F0F1F3] rounded" />
+                      <div className="w-[148px] h-4 bg-[#F0F1F3] rounded" />
+                      <div className="w-[80px] h-4 bg-[#F0F1F3] rounded" />
+                      <div className="w-[80px] h-4 bg-[#F0F1F3] rounded" />
+                      <div className="w-6 h-6 bg-[#F0F1F3] rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              ) : sorted.map(plan => (
                 <div
                   key={plan.id}
                   onClick={() => onSelect(plan.id)}
@@ -1093,35 +1142,51 @@ function PlanSelectModal({
 // ─────────────────────────────────────────────────────────────
 // 보험 목록 데이터 (Figma 기준 컬럼)
 // ─────────────────────────────────────────────────────────────
-const INSURANCE_CATEGORIES = ['전체', 'T All케어', '단말기보험', '파손보장', '분실보장', '기타'];
+const INSURANCE_CATEGORIES = ['전체', '폰 안심패스', '폰교체 패스', '폰교체 슬림'];
 
 interface InsuranceItem {
   id: string;
+  category: string;
   name: string;
-  desc: string;
-  price: string;
+  call: string;
+  sms: string;
+  addCall: string;
+  data: string;
+  monthly: string;
+  support: string;
 }
 
 const MOCK_INSURANCES: InsuranceItem[] = [
-  { id: 'ins-01', name: 'T All케어플러스6(i파손)', desc: '콜키퍼 + 통화가능통보플러스 + 안심문자 + 착신전화 + 개별통화수신거부 + 스마트케어', price: '2,200원' },
-  { id: 'ins-02', name: 'T All케어플러스5(i파손)', desc: '콜키퍼 + 통화가능통보플러스 + 안심문자 + 착신전화', price: '4,400원' },
-  { id: 'ins-03', name: '안심플랜(파손·고장)', desc: '파손, 고장 보장 (삼성, 애플 단말 대상)', price: '5,500원' },
-  { id: 'ins-04', name: '분실도난보험', desc: '분실, 도난 보장', price: '8,800원' },
-  { id: 'ins-05', name: '올인원(파손+분실+고장)', desc: '파손, 분실, 고장 통합 보장 프리미엄 플랜', price: '11,000원' },
+  { id: 'ins-01', category: '폰 안심패스', name: '폰 안심패스 플래티넘', call: '무제한', sms: '무제한', addCall: '300분', data: '36GB + 데이터충전 36GB + 1Mbps', monthly: '130,000원', support: '999,999원' },
+  { id: 'ins-02', category: '폰 안심패스', name: '폰 안심패스 프리미엄', call: '무제한', sms: '무제한', addCall: '300분', data: '24GB + 1Mbps', monthly: '89,000원', support: '500,000원' },
+  { id: 'ins-03', category: '폰 안심패스', name: '폰 안심패스 스탠다드', call: '무제한', sms: '무제한', addCall: '200분', data: '15GB + 1Mbps', monthly: '69,000원', support: '300,000원' },
+  { id: 'ins-04', category: '폰교체 패스', name: '폰교체 패스 프리미엄', call: '무제한', sms: '무제한', addCall: '300분', data: '24GB + 1Mbps', monthly: '89,000원', support: '500,000원' },
+  { id: 'ins-05', category: '폰교체 패스', name: '폰교체 패스 베이직', call: '무제한', sms: '무제한', addCall: '100분', data: '10GB + 1Mbps', monthly: '59,000원', support: '200,000원' },
+  { id: 'ins-06', category: '폰교체 슬림', name: '폰교체 슬림 플러스', call: '무제한', sms: '무제한', addCall: '100분', data: '10GB + 1Mbps', monthly: '49,000원', support: '150,000원' },
+  { id: 'ins-07', category: '폰교체 슬림', name: '폰교체 슬림 기본', call: '무제한', sms: '무제한', addCall: '-', data: '5GB + 1Mbps', monthly: '39,000원', support: '100,000원' },
 ];
 
 function InsuranceSelectModal({
+  title = '보험',
   selectedInsurance, onSelect, onClose,
 }: {
+  title?: string;
   selectedInsurance: string;
   onSelect: (ins: string) => void;
   onClose: () => void;
 }) {
-  const [search, setSearch]       = useState('');
-  const [category, setCategory]   = useState('전체');
-  const [sortOpen, setSortOpen]   = useState(false);
-  const [sort, setSort]           = useState('가격높은순');
-  const sortRef                   = useRef<HTMLDivElement>(null);
+  const [search, setSearch]           = useState('');
+  const [category, setCategory]       = useState('전체');
+  const [sortOpen, setSortOpen]       = useState(false);
+  const [sort, setSort]               = useState('높은 가격 순');
+  const [favorites, setFavorites]     = useState<Set<string>>(new Set());
+  const sortRef                       = useRef<HTMLDivElement>(null);
+
+  const toggleFavorite = (id: string) => setFavorites(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
   useEffect(() => {
     const h = (e: MouseEvent) => { if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false); };
@@ -1129,17 +1194,36 @@ function InsuranceSelectModal({
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
+  const parseMonthly = (s: string) => parseInt(s.replace(/[^0-9]/g, ''), 10) || 0;
+
   const filtered = MOCK_INSURANCES.filter(ins =>
-    !search || ins.name.toLowerCase().includes(search.toLowerCase())
+    (category === '전체' || ins.category === category) &&
+    (!search || ins.name.toLowerCase().includes(search.toLowerCase()))
   );
+
+  let sorted: InsuranceItem[];
+  if (sort === '즐겨찾기') {
+    sorted = filtered.filter(ins => favorites.has(ins.id));
+  } else {
+    const byPrice = (a: InsuranceItem, b: InsuranceItem) =>
+      sort === '낮은 가격 순'
+        ? parseMonthly(a.monthly) - parseMonthly(b.monthly)
+        : parseMonthly(b.monthly) - parseMonthly(a.monthly);
+    const fav  = filtered.filter(ins =>  favorites.has(ins.id)).sort(byPrice);
+    const rest = filtered.filter(ins => !favorites.has(ins.id)).sort(byPrice);
+    sorted = [...fav, ...rest];
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="w-[900px] bg-white rounded-xl p-7 flex flex-col gap-5" onClick={e => e.stopPropagation()}>
-
-        {/* 헤더 */}
-        <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-4">
-          <span className="text-xl font-semibold text-[#111827]">보험</span>
+      <div
+        className="w-[900px] h-[720px] bg-white rounded-2xl py-7 px-6 flex flex-col"
+        style={{ boxShadow: '-1px 0 4px 0 rgba(0,0,0,0.10), 1px 0 4px 0 rgba(0,0,0,0.10), 0 2px 4px 0 rgba(0,0,0,0.15)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* 헤더 (Frame 832) h=40 */}
+        <div className="w-full h-10 shrink-0 flex items-center justify-between border-b border-[#E2E8F0]">
+          <span className="text-[20px] font-semibold text-[#111827]">{title}</span>
           <button onClick={onClose} className="w-7 h-7 flex items-center justify-center bg-transparent border-none cursor-pointer p-0">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M1 1l12 12M13 1L1 13" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round"/>
@@ -1147,83 +1231,105 @@ function InsuranceSelectModal({
           </button>
         </div>
 
-        {/* 검색 + 정렬 */}
-        <div className="flex gap-4">
-          <div className="flex-1 h-11 flex items-center gap-2 px-3 border border-[#E2E8F0] rounded-lg bg-white">
-            <input
-              type="text"
-              placeholder="요금제 검색"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="flex-1 bg-transparent border-none outline-none text-[14px] text-[#111827] placeholder:text-[#9CA3AF]"
-            />
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" className="shrink-0">
-              <circle cx="5.5" cy="5.5" r="4.5" stroke="#9CA3AF" strokeWidth="1.3"/>
-              <path d="M9 9l3 3" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round"/>
-            </svg>
+        {/* 본문 (Frame 952): pt=20 gap=20 flex-1 */}
+        <div className="flex flex-col gap-5 pt-5 flex-1 w-full min-h-0">
+
+          {/* 카테고리 탭 (Frame 1004) h=44 */}
+          <div className="w-full flex shrink-0">
+            {INSURANCE_CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setCategory(cat)}
+                className={`h-11 px-3 shrink-0 text-[14px] font-medium cursor-pointer whitespace-nowrap bg-white border-none ${category === cat ? 'text-[#111827]' : 'text-[#6B7280]'}`}
+                style={{ borderBottom: category === cat ? '2px solid #1A80FF' : '2px solid transparent' }}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
-          <div ref={sortRef} className="relative w-[236px]">
-            <button
-              onClick={() => setSortOpen(o => !o)}
-              className="w-full h-11 flex items-center justify-between px-3 rounded-lg bg-white cursor-pointer"
-              style={{ border: '1px solid #E2E8F0' }}
-            >
-              <span className="text-[14px] text-[#9CA3AF]">{sort}</span>
-              <svg width="8" height="4" viewBox="0 0 8 4" fill="none"><path d="M1 1l3 2 3-2" stroke="#9CA3AF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            {sortOpen && (
-              <div className="absolute top-full left-0 mt-1 w-full bg-white border border-[#E2E8F0] rounded-lg shadow-md z-10 overflow-hidden">
-                {['가격높은순', '가격낮은순', '이름순'].map(opt => (
-                  <button key={opt} onClick={() => { setSort(opt); setSortOpen(false); }} className={`w-full px-3 py-2.5 text-left text-[14px] border-none cursor-pointer ${sort === opt ? 'bg-[#E8F2FF] text-[#111827]' : 'bg-white text-[#111827]'}`}>{opt}</button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* 카테고리 탭 */}
-        <div className="flex bg-[#F8F9FA] overflow-x-auto">
-          {INSURANCE_CATEGORIES.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setCategory(cat)}
-              className={`h-11 px-3 shrink-0 text-[14px] font-medium border-none cursor-pointer whitespace-nowrap ${category === cat ? 'bg-primary text-white' : 'bg-transparent text-[#111827]'}`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* 테이블 헤더 */}
-        <div className="flex items-center h-12 px-5 bg-[#F8F9FA] border border-[#E2E8F0] rounded-lg">
-          <span className="w-[220px] shrink-0 text-[14px] text-[#9CA3AF]">상품명</span>
-          <span className="flex-1 text-[14px] text-[#9CA3AF]">상세설명</span>
-          <span className="w-[80px] shrink-0 text-[14px] text-[#9CA3AF]">서비스 요금</span>
-          <span className="w-6 shrink-0" />
-        </div>
-
-        {/* 보험 목록 */}
-        <div className="flex flex-col max-h-[320px] overflow-y-auto border border-[#E2E8F0] rounded-lg">
-          {filtered.map(ins => (
-            <div
-              key={ins.id}
-              onClick={() => onSelect(ins.name)}
-              className={`flex items-center min-h-[64px] px-5 cursor-pointer border-b border-[#E2E8F0] last:border-b-0
-                ${selectedInsurance === ins.name ? 'bg-[#E8F2FF]' : 'bg-white'}`}
-            >
-              <span className="w-[220px] shrink-0 text-[14px] font-medium text-[#111827]">{ins.name}</span>
-              <span className="flex-1 text-[14px] text-[#6B7280] break-words">{ins.desc}</span>
-              <span className="w-[80px] shrink-0 text-[14px] text-[#6B7280]">{ins.price}</span>
-              <span className="w-6 shrink-0 flex items-center justify-center">
-                <svg width="17" height="16" viewBox="0 0 17 16" fill="none">
-                  <circle cx="8.5" cy="8" r="7.5" stroke={selectedInsurance === ins.name ? '#1A80FF' : '#E2E8F0'} strokeWidth="1.5"/>
-                  {selectedInsurance === ins.name && <circle cx="8.5" cy="8" r="4.5" fill="#1A80FF"/>}
-                </svg>
-              </span>
+          {/* 정렬 + 검색 (Frame 1015) h=44 */}
+          <div className="w-full flex items-center justify-between shrink-0">
+            <div ref={sortRef} className="relative w-[140px]">
+              <button
+                onClick={() => setSortOpen(!sortOpen)}
+                className="w-full h-11 flex items-center justify-between pl-3 pr-2 border border-[#E2E8F0] rounded-lg bg-white cursor-pointer"
+              >
+                <span className="text-[14px] text-[#111827]">{sort}</span>
+                <svg width="8" height="4" viewBox="0 0 8 4" fill="none"><path d="M1 1l3 2 3-2" stroke="#9CA3AF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              {sortOpen && (
+                <div className="absolute top-full left-0 mt-1 w-full bg-white border border-[#E2E8F0] rounded-lg shadow-md z-10 overflow-hidden">
+                  {['높은 가격 순', '낮은 가격 순', '즐겨찾기'].map(opt => (
+                    <button key={opt} onClick={() => { setSort(opt); setSortOpen(false); }} className={`w-full px-3 py-2.5 text-left text-[14px] border-none cursor-pointer ${sort === opt ? 'bg-[#E8F2FF] text-[#111827]' : 'bg-white text-[#111827]'}`}>{opt}</button>
+                  ))}
+                </div>
+              )}
             </div>
-          ))}
-        </div>
+            <div className="w-[240px] h-11 flex items-center justify-between pl-3 pr-2 border border-[#E2E8F0] rounded-lg bg-white">
+              <input
+                type="text"
+                placeholder="검색"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="flex-1 bg-transparent border-none outline-none text-[14px] text-[#111827] placeholder:text-[#9CA3AF]"
+              />
+              <div className="w-6 h-6 flex items-center justify-center">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <circle cx="5.5" cy="5.5" r="4.5" stroke="#9CA3AF" strokeWidth="1.3"/>
+                  <path d="M9 9l3 3" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
 
+          {/* 테이블 (Frame 1016) flex-1 */}
+          <div className="flex-1 border border-[#E2E8F0] flex flex-col min-h-0">
+            {/* 헤더행 (Frame 1017) h=48 */}
+            <div className="w-full h-12 shrink-0 flex items-center justify-between pl-3 pr-3 bg-[#F8F9FA] border-b border-[#E2E8F0]">
+              <span className="w-[200px] shrink-0 text-[14px] text-[#9CA3AF]">요금제명</span>
+              <span className="w-[52px] shrink-0 text-[14px] text-[#9CA3AF] text-center">통화</span>
+              <span className="w-[52px] shrink-0 text-[14px] text-[#9CA3AF] text-center">문자</span>
+              <span className="w-[52px] shrink-0 text-[14px] text-[#9CA3AF] text-center">부가통화</span>
+              <span className="w-[148px] shrink-0 text-[14px] text-[#9CA3AF] text-center">데이터</span>
+              <span className="w-[80px] shrink-0 text-[14px] text-[#9CA3AF] text-center">월정액</span>
+              <span className="w-[80px] shrink-0 text-[14px] text-[#9CA3AF] text-center">이통사지원금</span>
+              <span className="w-6 shrink-0" />
+            </div>
+            {/* 데이터행 overflow-y-auto */}
+            <div className="flex-1 overflow-y-auto">
+              {sorted.map(ins => (
+                <div
+                  key={ins.id}
+                  onClick={() => onSelect(ins.name)}
+                  className={`w-full flex items-center justify-between min-h-[64px] pl-3 pr-3 cursor-pointer border-b border-[#E2E8F0] last:border-b-0
+                    ${selectedInsurance === ins.name ? 'bg-[#E8F2FF]' : 'bg-white hover:bg-[#F8F9FA]'}`}
+                >
+                  <span className="w-[200px] shrink-0 text-[14px] font-medium text-[#111827]">{ins.name}</span>
+                  <span className="w-[52px] shrink-0 text-[14px] font-medium text-[#6B7280] text-center">{ins.call}</span>
+                  <span className="w-[52px] shrink-0 text-[14px] font-medium text-[#6B7280] text-center">{ins.sms}</span>
+                  <span className="w-[52px] shrink-0 text-[14px] font-medium text-[#6B7280] text-center">{ins.addCall}</span>
+                  <span className="w-[148px] shrink-0 text-[14px] font-medium text-[#6B7280] text-center break-words">{ins.data}</span>
+                  <span className="w-[80px] shrink-0 text-[14px] font-medium text-[#6B7280] text-center">{ins.monthly}</span>
+                  <span className="w-[80px] shrink-0 text-[14px] font-medium text-[#6B7280] text-center">{ins.support}</span>
+                  <div
+                    className="w-6 h-6 shrink-0 flex items-center justify-center cursor-pointer"
+                    onClick={e => { e.stopPropagation(); toggleFavorite(ins.id); }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M12.001 4.5C12.1476 4.50006 12.2906 4.54105 12.4131 4.61719C12.5355 4.69326 12.6319 4.8011 12.6924 4.92676L12.6963 4.93555L14.625 8.75098L14.7549 9.00977L15.042 9.05273L19.2881 9.66992L19.3125 9.67285C19.4598 9.68705 19.5984 9.74252 19.7129 9.83105C19.8273 9.91953 19.9124 10.0368 19.959 10.1689C20.0055 10.3011 20.013 10.4435 19.9795 10.5791C19.946 10.7147 19.8725 10.8392 19.7676 10.9375L16.6777 13.8623L16.6523 13.8848C16.5851 13.9478 16.5346 14.0276 16.5068 14.1172L16.4922 14.3711L17.2324 18.6221C17.2576 18.7603 17.2418 18.9005 17.1885 19.0293C17.1351 19.1583 17.0452 19.2711 16.9277 19.3545C16.8102 19.4379 16.6701 19.4882 16.5234 19.498C16.377 19.5078 16.231 19.4773 16.1025 19.4102L12.2744 17.4277L12.001 17.3623C11.9186 17.3623 11.8368 17.3796 11.7607 17.4121L7.90137 19.4102C7.77254 19.477 7.6261 19.5082 7.47949 19.498C7.33299 19.4879 7.19351 19.437 7.07617 19.3535C6.95885 19.2701 6.86884 19.1572 6.81543 19.0283C6.7622 18.8998 6.74647 18.7585 6.77051 18.6221L7.51953 14.3301L7.34668 13.8818L4.23535 10.9404C4.09368 10.7775 4.04679 10.6818 4.02148 10.5801C3.98782 10.4444 3.99445 10.3012 4.04102 10.1689C4.08765 10.0368 4.17264 9.91855 4.28711 9.83008C4.40175 9.74158 4.54109 9.68688 4.68848 9.67285L8.98438 9.04883L9.24707 9.00977L9.37695 8.75098L11.3057 4.93555C11.37 4.8012 11.4666 4.69325 11.5889 4.61719C11.7114 4.54105 11.8544 4.50006 12.001 4.5Z"
+                        fill={favorites.has(ins.id) ? '#FACC15' : 'white'}
+                        stroke={favorites.has(ins.id) ? '#FACC15' : '#E2E8F0'}
+                      />
+                    </svg>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );

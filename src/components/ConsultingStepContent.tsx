@@ -44,6 +44,7 @@ const DEVICE_IMAGES: Record<string, string> = {
 };
 
 const DEVICES: Device[] = [
+  // ── 사진 보유 기기 (최상단) ────────────────────────────────────
   {
     id: 'iphone-17e',
     brand: 'Apple',
@@ -61,6 +62,221 @@ const DEVICES: Device[] = [
       cpu: 'A19칩', ram: '8GB', storage: '256GB', display: '6.1인치',
       camera: '전면: 1,200만\n후면: 4,800만', battery: '4005mah',
       weight: '200g', released: '2026년 3월 11일',
+    },
+  },
+  // ── Apple ──────────────────────────────────────────────────────
+  {
+    id: 'iphone-17-pro-max',
+    brand: 'Apple',
+    name: '아이폰 17 Pro Max',
+    model: 'IP17PROMAX_256GB',
+    price: '990,000원',
+    support: '300,000원',
+    remaining: '890,000원',
+    colors: [
+      { name: '네추럴 티타늄', hex: '#C5B9A8' },
+      { name: '블랙 티타늄',   hex: '#4A4A4C' },
+      { name: '화이트 티타늄', hex: '#F5F5EF' },
+    ],
+    specs: {
+      cpu: 'A19 Pro칩', ram: '8GB', storage: '256GB', display: '6.9인치 Super Retina XDR',
+      camera: '전면: 1,200만\n후면: 4,800만 트리플', battery: '4685mah',
+      weight: '227g', released: '2025년 9월',
+    },
+  },
+  {
+    id: 'iphone-17-pro',
+    brand: 'Apple',
+    name: '아이폰 17 Pro',
+    model: 'IP17PRO_256GB',
+    price: '990,000원',
+    support: '200,000원',
+    remaining: '990,000원',
+    colors: [
+      { name: '네추럴 티타늄', hex: '#C5B9A8' },
+      { name: '블랙 티타늄',   hex: '#4A4A4C' },
+      { name: '화이트 티타늄', hex: '#F5F5EF' },
+    ],
+    specs: {
+      cpu: 'A19 Pro칩', ram: '8GB', storage: '256GB', display: '6.3인치 Super Retina XDR',
+      camera: '전면: 1,200만\n후면: 4,800만 트리플', battery: '4422mah',
+      weight: '199g', released: '2025년 9월',
+    },
+  },
+  {
+    id: 'iphone-17',
+    brand: 'Apple',
+    name: '아이폰 17',
+    model: 'IP17_128GB',
+    price: '790,000원',
+    support: '370,000원',
+    remaining: '820,000원',
+    colors: [
+      { name: '울트라마린', hex: '#5B7EB5' },
+      { name: '화이트',     hex: '#FAFAFA'  },
+      { name: '블랙',       hex: '#1C1C1E'  },
+      { name: '핑크',       hex: '#F5BDD2'  },
+    ],
+    specs: {
+      cpu: 'A19칩', ram: '8GB', storage: '128GB', display: '6.1인치 Super Retina XDR',
+      camera: '전면: 2,400만\n후면: 4,800만 듀얼', battery: '3582mah',
+      weight: '170g', released: '2025년 9월',
+    },
+  },
+  {
+    id: 'iphone-16-pro-max',
+    brand: 'Apple',
+    name: '아이폰 16 Pro Max',
+    model: 'IP16PROMAX_256GB',
+    price: '950,000원',
+    support: '650,000원',
+    remaining: '900,000원',
+    colors: [
+      { name: '내추럴 티타늄', hex: '#C5B9A8' },
+      { name: '블랙 티타늄',   hex: '#4A4A4C' },
+      { name: '사막 티타늄',   hex: '#C8A882' },
+    ],
+    specs: {
+      cpu: 'A18 Pro칩', ram: '8GB', storage: '256GB', display: '6.9인치 Super Retina XDR',
+      camera: '전면: 1,200만\n후면: 4,800만 트리플', battery: '4685mah',
+      weight: '227g', released: '2024년 9월',
+    },
+  },
+  {
+    id: 'iphone-16-pro',
+    brand: 'Apple',
+    name: '아이폰 16 Pro',
+    model: 'IP16PRO_128GB',
+    price: '890,000원',
+    support: '550,000원',
+    remaining: '900,000원',
+    colors: [
+      { name: '내추럴 티타늄', hex: '#C5B9A8' },
+      { name: '블랙 티타늄',   hex: '#4A4A4C' },
+      { name: '화이트 티타늄', hex: '#F5F5EF' },
+    ],
+    specs: {
+      cpu: 'A18 Pro칩', ram: '8GB', storage: '128GB', display: '6.3인치 Super Retina XDR',
+      camera: '전면: 1,200만\n후면: 4,800만 트리플', battery: '3582mah',
+      weight: '199g', released: '2024년 9월',
+    },
+  },
+  // ── Samsung ────────────────────────────────────────────────────
+  {
+    id: 'galaxy-s25-ultra',
+    brand: 'Samsung',
+    name: '갤럭시 S25 Ultra',
+    model: 'SM-S938N_256GB',
+    price: '890,000원',
+    support: '780,000원',
+    remaining: '990,000원',
+    colors: [
+      { name: '티타늄 실버블루', hex: '#A8B8CC' },
+      { name: '티타늄 블랙',     hex: '#3A3A3C' },
+      { name: '티타늄 화이트',   hex: '#E8E8E0' },
+    ],
+    specs: {
+      cpu: 'Snapdragon 8 Elite', ram: '12GB', storage: '256GB', display: '6.9인치 QHD+ AMOLED',
+      camera: '전면: 1,200만\n후면: 2억화소 쿼드', battery: '5000mah',
+      weight: '218g', released: '2025년 1월',
+    },
+  },
+  {
+    id: 'galaxy-s25-plus',
+    brand: 'Samsung',
+    name: '갤럭시 S25+',
+    model: 'SM-S936N_256GB',
+    price: '990,000원',
+    support: '620,000원',
+    remaining: '880,000원',
+    colors: [
+      { name: '아이시 블루', hex: '#B8CAD8' },
+      { name: '민트',        hex: '#B8D4CC' },
+      { name: '블랙',        hex: '#1C1C1E' },
+    ],
+    specs: {
+      cpu: 'Snapdragon 8 Elite', ram: '12GB', storage: '256GB', display: '6.7인치 FHD+ AMOLED',
+      camera: '전면: 1,200만\n후면: 5,000만 트리플', battery: '4900mah',
+      weight: '190g', released: '2025년 1월',
+    },
+  },
+  {
+    id: 'galaxy-s25',
+    brand: 'Samsung',
+    name: '갤럭시 S25',
+    model: 'SM-S931N_256GB',
+    price: '999,000원',
+    support: '480,000원',
+    remaining: '720,000원',
+    colors: [
+      { name: '아이시 블루',   hex: '#B8CAD8' },
+      { name: '민트',          hex: '#B8D4CC' },
+      { name: '블랙',          hex: '#1C1C1E' },
+      { name: '실버 섀도우',   hex: '#C8C8D0' },
+    ],
+    specs: {
+      cpu: 'Snapdragon 8 Elite', ram: '12GB', storage: '256GB', display: '6.2인치 FHD+ AMOLED',
+      camera: '전면: 1,200만\n후면: 5,000만 트리플', battery: '4000mah',
+      weight: '162g', released: '2025년 1월',
+    },
+  },
+  {
+    id: 'galaxy-z-fold7',
+    brand: 'Samsung',
+    name: '갤럭시 Z Fold7',
+    model: 'SM-F966N_256GB',
+    price: '990,000원',
+    support: '900,000원',
+    remaining: '900,000원',
+    colors: [
+      { name: '크림 화이트', hex: '#F5F0E8' },
+      { name: '블랙',        hex: '#1C1C1E' },
+      { name: '실버 블루',   hex: '#A8B8CC' },
+    ],
+    specs: {
+      cpu: 'Snapdragon 8 Elite', ram: '12GB', storage: '256GB', display: '7.9인치 QXGA+ / 커버: 6.5인치',
+      camera: '전면: 1,000만\n후면: 5,000만 트리플', battery: '4400mah',
+      weight: '236g', released: '2025년 7월',
+    },
+  },
+  {
+    id: 'galaxy-z-flip7',
+    brand: 'Samsung',
+    name: '갤럭시 Z Flip7',
+    model: 'SM-F747N_256GB',
+    price: '990,000원',
+    support: '580,000원',
+    remaining: '820,000원',
+    colors: [
+      { name: '블루 민트', hex: '#A0C8C0' },
+      { name: '화이트',    hex: '#F5F5F0' },
+      { name: '블랙',      hex: '#1C1C1E' },
+      { name: '핑크',      hex: '#F2B8C6' },
+    ],
+    specs: {
+      cpu: 'Snapdragon 8 Elite', ram: '12GB', storage: '256GB', display: '6.9인치 FHD+ / 커버: 4.1인치',
+      camera: '전면: 1,000만\n후면: 5,000만 듀얼', battery: '4300mah',
+      weight: '187g', released: '2025년 7월',
+    },
+  },
+  {
+    id: 'galaxy-s24-fe',
+    brand: 'Samsung',
+    name: '갤럭시 S24 FE',
+    model: 'SM-S721N_128GB',
+    price: '900,000원',
+    support: '300,000원',
+    remaining: '600,000원',
+    colors: [
+      { name: '블루',       hex: '#7090C0' },
+      { name: '화이트',     hex: '#F5F5F0' },
+      { name: '그래파이트', hex: '#5C5C64' },
+      { name: '민트',       hex: '#B8D4CC' },
+    ],
+    specs: {
+      cpu: 'Exynos 2500', ram: '8GB', storage: '128GB', display: '6.7인치 FHD+ AMOLED',
+      camera: '전면: 1,000만\n후면: 5,000만 트리플', battery: '4700mah',
+      weight: '213g', released: '2024년 10월',
     },
   },
 ];
@@ -142,8 +358,6 @@ function WirelessCarrierStep({ navigate }: { navigate: (s: ConsultingStep) => vo
   );
 }
 
-const PLACEHOLDER_IDS = Array.from({ length: 14 }, (_, i) => `ph-${i}`);
-
 function WirelessDeviceStep({ carrier, navigate }: { carrier: string; navigate: (s: ConsultingStep, label?: string) => void }) {
   const [brandFilter, setBrandFilter] = useState<BrandFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -188,10 +402,6 @@ function WirelessDeviceStep({ carrier, navigate }: { carrier: string; navigate: 
   const sortedDevices = [
     ...filtered.filter(d => favorites.has(d.id)),
     ...filtered.filter(d => !favorites.has(d.id)),
-  ];
-  const sortedPlaceholders = [
-    ...PLACEHOLDER_IDS.filter(id => favorites.has(id)),
-    ...PLACEHOLDER_IDS.filter(id => !favorites.has(id)),
   ];
 
   const selected = DEVICES.find(d => d.id === selectedId) ?? DEVICES[0];
@@ -312,21 +522,6 @@ function WirelessDeviceStep({ carrier, navigate }: { carrier: string; navigate: 
                   <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">{device.remaining}</span>
                   <span className="w-6 h-6 flex flex-col justify-center items-center shrink-0">
                     <StarIcon favorited={favorites.has(device.id)} onClick={(e) => toggleFavorite(device.id, e)} />
-                  </span>
-                </div>
-              ))}
-              {sortedPlaceholders.map(phId => (
-                <div
-                  key={phId}
-                  className="flex justify-between items-center h-16 py-4 px-5 shrink-0 self-stretch bg-white border-b border-input-border last:border-b-0 text-base"
-                >
-                  <span className="w-[156px] shrink-0 font-medium text-text-dark">기기명</span>
-                  <span className="w-[124px] shrink-0 font-medium text-text-gray">모델명</span>
-                  <span className="w-[92px] shrink-0 font-medium text-text-gray text-right">1,254,000원</span>
-                  <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">700,000원</span>
-                  <span className="w-[88px] shrink-0 font-medium text-text-gray text-right">554,000원</span>
-                  <span className="w-6 h-6 flex flex-col justify-center items-center shrink-0">
-                    <StarIcon favorited={favorites.has(phId)} onClick={(e) => toggleFavorite(phId, e)} />
                   </span>
                 </div>
               ))}

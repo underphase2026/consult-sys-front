@@ -11,14 +11,30 @@ interface DeviceColor { name: string; hex: string; }
 interface Device { id: string; brand: string; name: string; model: string; price: string; colors: DeviceColor[]; }
 
 const DEVICES: Device[] = [
-  {
-    id: 'iphone-17e', brand: 'Apple', name: '아이폰 17e', model: 'IP17E_256GB', price: '990,000원',
-    colors: [
-      { name: '소프트핑크', hex: '#F2B8C6' },
-      { name: '화이트',     hex: '#F5F5F0' },
-      { name: '블랙',       hex: '#1C1C1E' },
-    ],
-  },
+  { id: 'iphone-17e',        brand: 'Apple',   name: '아이폰 17e',         model: 'IP17E_256GB',        price: '990,000원',
+    colors: [{ name: '소프트핑크', hex: '#F2B8C6' }, { name: '화이트', hex: '#F5F5F0' }, { name: '블랙', hex: '#1C1C1E' }] },
+  { id: 'iphone-17-pro-max', brand: 'Apple',   name: '아이폰 17 Pro Max',  model: 'IP17PROMAX_256GB',   price: '1,890,000원',
+    colors: [{ name: '네추럴 티타늄', hex: '#C5B9A8' }, { name: '블랙 티타늄', hex: '#4A4A4C' }, { name: '화이트 티타늄', hex: '#F5F5EF' }] },
+  { id: 'iphone-17-pro',     brand: 'Apple',   name: '아이폰 17 Pro',      model: 'IP17PRO_256GB',      price: '1,690,000원',
+    colors: [{ name: '네추럴 티타늄', hex: '#C5B9A8' }, { name: '블랙 티타늄', hex: '#4A4A4C' }, { name: '화이트 티타늄', hex: '#F5F5EF' }] },
+  { id: 'iphone-17',         brand: 'Apple',   name: '아이폰 17',          model: 'IP17_128GB',         price: '1,390,000원',
+    colors: [{ name: '울트라마린', hex: '#5B7EB5' }, { name: '화이트', hex: '#FAFAFA' }, { name: '블랙', hex: '#1C1C1E' }, { name: '핑크', hex: '#F5BDD2' }] },
+  { id: 'iphone-16-pro-max', brand: 'Apple',   name: '아이폰 16 Pro Max',  model: 'IP16PROMAX_256GB',   price: '1,750,000원',
+    colors: [{ name: '내추럴 티타늄', hex: '#C5B9A8' }, { name: '블랙 티타늄', hex: '#4A4A4C' }, { name: '사막 티타늄', hex: '#C8A882' }] },
+  { id: 'iphone-16-pro',     brand: 'Apple',   name: '아이폰 16 Pro',      model: 'IP16PRO_128GB',      price: '1,550,000원',
+    colors: [{ name: '내추럴 티타늄', hex: '#C5B9A8' }, { name: '블랙 티타늄', hex: '#4A4A4C' }, { name: '화이트 티타늄', hex: '#F5F5EF' }] },
+  { id: 'galaxy-s25-ultra',  brand: 'Samsung', name: '갤럭시 S25 Ultra',   model: 'SM-S938N_256GB',     price: '1,900,000원',
+    colors: [{ name: '티타늄 실버블루', hex: '#A8B8CC' }, { name: '티타늄 블랙', hex: '#3A3A3C' }, { name: '티타늄 화이트', hex: '#E8E8E0' }] },
+  { id: 'galaxy-s25-plus',   brand: 'Samsung', name: '갤럭시 S25+',        model: 'SM-S936N_256GB',     price: '1,500,000원',
+    colors: [{ name: '아이시 블루', hex: '#B8CAD8' }, { name: '민트', hex: '#B8D4CC' }, { name: '블랙', hex: '#1C1C1E' }] },
+  { id: 'galaxy-s25',        brand: 'Samsung', name: '갤럭시 S25',         model: 'SM-S931N_256GB',     price: '1,200,000원',
+    colors: [{ name: '아이시 블루', hex: '#B8CAD8' }, { name: '민트', hex: '#B8D4CC' }, { name: '블랙', hex: '#1C1C1E' }, { name: '실버 섀도우', hex: '#C8C8D0' }] },
+  { id: 'galaxy-z-fold7',    brand: 'Samsung', name: '갤럭시 Z Fold7',     model: 'SM-F966N_256GB',     price: '2,200,000원',
+    colors: [{ name: '크림 화이트', hex: '#F5F0E8' }, { name: '블랙', hex: '#1C1C1E' }, { name: '실버 블루', hex: '#A8B8CC' }] },
+  { id: 'galaxy-z-flip7',    brand: 'Samsung', name: '갤럭시 Z Flip7',     model: 'SM-F747N_256GB',     price: '1,400,000원',
+    colors: [{ name: '블루 민트', hex: '#A0C8C0' }, { name: '화이트', hex: '#F5F5F0' }, { name: '블랙', hex: '#1C1C1E' }, { name: '핑크', hex: '#F2B8C6' }] },
+  { id: 'galaxy-s24-fe',     brand: 'Samsung', name: '갤럭시 S24 FE',      model: 'SM-S721N_128GB',     price: '900,000원',
+    colors: [{ name: '블루', hex: '#7090C0' }, { name: '화이트', hex: '#F5F5F0' }, { name: '그래파이트', hex: '#5C5C64' }, { name: '민트', hex: '#B8D4CC' }] },
 ];
 
 const CARRIER_LABELS: Record<string, string> = { skt: 'SKT', kt: 'KT', lgu: 'LG U+' };
